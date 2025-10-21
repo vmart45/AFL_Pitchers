@@ -1,0 +1,6 @@
+streamlit==1.37.0
+polars==1.8.2
+matplotlib==3.9.2
+requests==2.32.3
+pandas==2.2.2
+numpy==1.26.4
