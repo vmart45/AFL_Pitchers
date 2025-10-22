@@ -1,17 +1,59 @@
-import streamlit as st
-import datetime
-import polars as pl
+import datetime as dt
+from zoneinfo import ZoneInfo
 import os
-import matplotlib.pyplot as plt
-from StatcastMain import get_afl_data  # your existing scraper
-
-# -------------------------------------------------------------------
-# Streamlit page setup
-# -------------------------------------------------------------------
-st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
-st.title("Arizona Fall League Pitcher Dashboard")
+import polars as pl
+import streamlit as st
 
 CACHE_FILE = "afl_cache.parquet"
+
+def seconds_until_next_8am_pt(now_utc: dt.datetime | None = None) -> int:
+    if now_utc is None:
+        now_utc = dt.datetime.now(dt.timezone.utc)
+    PT = ZoneInfo("America/Los_Angeles")
+    now_pt = now_utc.astimezone(PT)
+    target = now_pt.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now_pt >= target:
+        target = target + dt.timedelta(days=1)
+    return int((target - now_pt).total_seconds())
+
+@st.cache_data(ttl=seconds_until_next_8am_pt())
+def fetch_afl_data_all_days(start: dt.date, end: dt.date) -> pl.DataFrame:
+    dfs = []
+    all_cols = set()
+    for i in range((end - start).days + 1):
+        date = start + dt.timedelta(days=i)
+        df_day = get_afl_data(date.strftime("%Y-%m-%d"))
+        if not df_day.is_empty():
+            dfs.append(df_day)
+            all_cols.update(df_day.columns)
+    if not dfs:
+        return pl.DataFrame()
+    all_cols = sorted(all_cols)
+    aligned = []
+    for df in dfs:
+        missing = set(all_cols) - set(df.columns)
+        if missing:
+            df = df.with_columns([pl.lit(None).alias(col) for col in missing])
+        aligned.append(df.select(all_cols))
+    return pl.concat(aligned, how="vertical", rechunk=True)
+
+def load_or_fetch_data() -> pl.DataFrame:
+    PT = ZoneInfo("America/Los_Angeles")
+    now_pt = dt.datetime.now(PT)
+    cutoff = now_pt.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now_pt < cutoff:
+        cutoff = cutoff - dt.timedelta(days=1)
+    if os.path.exists(CACHE_FILE):
+        mtime = dt.datetime.fromtimestamp(os.path.getmtime(CACHE_FILE), PT)
+        if mtime >= cutoff:
+            return pl.read_parquet(CACHE_FILE)
+    season_start = dt.date(2025, 10, 1)
+    today = dt.date.today()
+    df = fetch_afl_data_all_days(season_start, today)
+    if not df.is_empty():
+        df.write_parquet(CACHE_FILE)
+    return df
+
 AFL_TEAMS = [
     "Glendale Desert Dogs",
     "Mesa Solar Sox",
@@ -21,9 +63,6 @@ AFL_TEAMS = [
     "Surprise Saguaros"
 ]
 
-# -------------------------------------------------------------------
-# MLB-style pitch color palette (full names)
-# -------------------------------------------------------------------
 PITCH_COLORS = {
     "Four-Seam Fastball": "#D22D49",
     "Two-Seam Fastball": "#DE6A04",
@@ -43,18 +82,12 @@ PITCH_COLORS = {
     "Slow Curve": "#0068FF"
 }
 
-# -------------------------------------------------------------------
-# Utility: format date as “Oct. 16th, 2025”
-# -------------------------------------------------------------------
 def format_date_pretty(date_str: str) -> str:
     date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
     day = date.day
     suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return date.strftime(f"%b. {day}{suffix}, %Y")
 
-# -------------------------------------------------------------------
-# Data loading and caching
-# -------------------------------------------------------------------
 @st.cache_data(ttl=86400)
 def load_afl_data():
     start = datetime.date(2025, 10, 1)
@@ -98,18 +131,12 @@ def load_or_fetch_data():
     return df
 
 
-# -------------------------------------------------------------------
-# Refresh Button
-# -------------------------------------------------------------------
 if st.button("🔄 Refresh Data"):
     if os.path.exists(CACHE_FILE):
         os.remove(CACHE_FILE)
     load_afl_data.clear()
     st.experimental_rerun()
 
-# -------------------------------------------------------------------
-# Load + filter to AFL only
-# -------------------------------------------------------------------
 df = load_or_fetch_data()
 
 if not df.is_empty() and "home_team" in df.columns:
@@ -119,9 +146,7 @@ if df.is_empty():
     st.warning("No Arizona Fall League pitch data found.")
     st.stop()
 
-# -------------------------------------------------------------------
-# Sidebar Filters
-# -------------------------------------------------------------------
+
 st.sidebar.header("Filters")
 
 # Pitcher
@@ -145,9 +170,6 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
-# -------------------------------------------------------------------
-# Pitch Movement Plot
-# -------------------------------------------------------------------
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(4, 3.5))  # much smaller footprint
@@ -170,7 +192,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
             linewidths=0.3
         )
 
-    # Fixed limits and style
     ax.set_xlim(-25, 25)
     ax.set_ylim(-25, 25)
     ax.axhline(0, color="gray", linestyle="--", linewidth=0.8)
