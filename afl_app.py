@@ -230,11 +230,11 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     fig, ax = plt.subplots(figsize=(4, 3.5))
 
     if "type__description" in df.columns:
-    pitch_counts = (
-        df.group_by("type__description")
-          .count()
-          .sort("count", descending=True)
-          .to_pandas()
+        pitch_counts = (
+            df.group_by("type__description")
+              .count()
+              .sort("count", descending=True)
+              .to_pandas()
     )
     pitch_types_present = pitch_counts["type__description"].tolist()
 else:
