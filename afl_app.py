@@ -84,7 +84,7 @@ PITCH_COLORS = {
 }
 
 def format_date_pretty(date_str: str) -> str:
-    date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    date = dt.datetime.strptime(str(date_str), "%Y-%m-%d").date()
     day = date.day
     suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return date.strftime(f"%b. {day}{suffix}, %Y")
