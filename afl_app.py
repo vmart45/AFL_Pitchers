@@ -223,11 +223,11 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     st.pyplot(fig, clear_figure=True)
 
 def pitch_table(df: pd.DataFrame, ax: plt.Axes, fontsize: int = 12):
-    df["Avg Velo"] = df["Avg Velo"].round(1)
-    df["Avg IVB"] = df["Avg IVB"].round(1)
-    df["Avg HB"] = df["Avg HB"].round(1)
-    df["Avg Extension"] = df["Avg Extension"].round(1)
-    df["Avg Spin Rate"] = df["Avg Spin Rate"].round(0)
+    df["Avg Velo"] = df["Velo"].round(1)
+    df["Avg IVB"] = df["IVB"].round(1)
+    df["Avg HB"] = df["HB"].round(1)
+    df["Avg Extension"] = df["Extension"].round(1)
+    df["Avg Spin Rate"] = df["Spin"].round(0)
     df_plot = df.astype(str)
 
     table_columns = df_plot.columns.tolist()
@@ -265,11 +265,11 @@ summary = (
     df.group_by("type__description")
     .agg([
         pl.count().alias("Pitches"),
-        pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
-        pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
-        pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
-        pl.col("extension").mean().round(1).alias("Avg Extension"),
-        pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
+        pl.col("startSpeed").mean().round(1).alias("Velo"),
+        pl.col("breakVerticalInduced").mean().round(1).alias("IVB"),
+        pl.col("breakHorizontal").mean().round(1).alias("HB"),
+        pl.col("extension").mean().round(1).alias("Extension"),
+        pl.col("spinRate").mean().round(0).alias("Spin"),
     ])
     .rename({"type__description": "Pitch Type"})
     .sort("Pitches", descending=True)
@@ -278,6 +278,6 @@ summary = (
 if not summary.is_empty():
     df_summary = summary.to_pandas()
     st.markdown("### Pitch Summary by Type")
-    fig2, ax2 = plt.subplots(figsize=(9, 2.5))
+    fig2, ax2 = plt.subplots(figsize=(6, 1.8))
     pitch_table(df_summary, ax2)
     st.pyplot(fig2, clear_figure=True)
