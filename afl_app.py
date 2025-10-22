@@ -6,7 +6,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
-st.title("🎯 Arizona Fall League Pitch Movement Dashboard")
+st.title("Arizona Fall League Pitcher Dashboard")
 
 
 CACHE_FILE = "afl_cache.parquet"
