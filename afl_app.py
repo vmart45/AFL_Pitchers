@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 import os
 import polars as pl
 import streamlit as st
+import matplotlib.pyplot as plt
 
 CACHE_FILE = "afl_cache.parquet"
 
