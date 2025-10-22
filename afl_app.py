@@ -159,6 +159,16 @@ dates = sorted(df["game_date"].unique().to_list())
 selected_date = st.sidebar.selectbox("Select Game Date", dates)
 df = df.filter(pl.col("game_date") == selected_date)
 
+if not df.is_empty():
+    csv_data = df.write_csv()
+    st.download_button(
+        label="⬇️ Download AFL Data (CSV)",
+        data=csv_data,
+        file_name=f"afl_data_{dt.date.today()}.csv",
+        mime="text/csv"
+    )
+
+
 # Pitch types
 if "type__description" in df.columns:
     pitch_types = sorted(df["type__description"].drop_nulls().unique().to_list())
