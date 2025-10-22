@@ -184,6 +184,8 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
+import requests
+
 def get_pitcher_bio(pitcher_id: int):
     """Fetch basic bio info from MLB Stats API."""
     try:
@@ -195,22 +197,52 @@ def get_pitcher_bio(pitcher_id: int):
             height = data.get("height", "-")
             weight = data.get("weight", "-")
             birth_date = data.get("birthDate", "-")
-            team = data.get("currentTeam", {}).get("name", "-")
+            age = data.get("currentAge", None)
+            city = data.get("birthCity", "")
+            state = data.get("birthStateProvince", "")
+            country = data.get("birthCountry", "")
             throws = data.get("pitchHand", {}).get("description", "-")
-            position = data.get("primaryPosition", {}).get("name", "-")
+            bats = data.get("batSide", {}).get("description", "-")
+
+            # Format birthplace cleanly
+            birthplace = ", ".join([x for x in [city, state, country] if x])
 
             return {
                 "Name": full_name,
-                "Team": team,
-                "Position": position,
                 "Throws": throws,
+                "Bats": bats,
                 "Height": height,
                 "Weight": f"{weight} lbs" if isinstance(weight, (int, float)) else weight,
-                "Birth Date": birth_date
+                "Birth Date": birth_date,
+                "Age": age,
+                "Birthplace": birthplace
             }
     except Exception:
         pass
     return None
+
+
+# --- Pitcher Bio ---
+if not df.is_empty():
+    pitcher_id = None
+    if "pitcher_id" in df.columns:
+        pitcher_id = df["pitcher_id"][0]
+    elif "player_id" in df.columns:
+        pitcher_id = df["player_id"][0]
+
+    if pitcher_id:
+        bio = get_pitcher_bio(int(pitcher_id))
+        if bio:
+            st.markdown(f"### {bio['Name']}")
+            st.markdown(
+                f"**Throws/Bats:** {bio['Throws']} / {bio['Bats']}  |  "
+                f"**Height/Weight:** {bio['Height']}, {bio['Weight']}  |  "
+                f"**Born:** {bio['Birthplace']} — {bio['Birth Date']} "
+                f"({bio['Age']} yrs old)"
+            )
+        else:
+            st.info("⚾ Pitcher bio unavailable (not found in MLB Stats API).")
+
 
 # --- Pitcher Bio ---
 if "pitcher_id" in df.columns and not df.is_empty():
