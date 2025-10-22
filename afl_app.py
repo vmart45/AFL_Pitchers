@@ -340,10 +340,27 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
+ if not df.is_empty():
+    total_pitches = df.height
+
+    summary = (
+        df.group_by("type__description")
+        .agg([
+            pl.count().alias("Count"),
+            (pl.count() / total_pitches * 100).alias("Mix%"),
+            pl.col("startSpeed").mean().alias("Velo"),
+            pl.col("spinRate").mean().alias("Spin"),
+            pl.col("breakVerticalInduced").mean().alias("IVB"),
+            pl.col("breakHorizontal").mean().alias("HB"),
+            pl.col("z0").mean().alias("RelHt"),
+            pl.col("extension").mean().alias("Ext"),
+        ])
+        .sort("Count", descending=True)
+    )
+
     if not summary.is_empty():
         df_summary = summary.to_pandas()
 
-        # ft/in conversions
         def format_feet_inches(decimal_value):
             if pd.isna(decimal_value):
                 return "-"
@@ -351,13 +368,11 @@ if not df.is_empty():
             inches = round((decimal_value - feet) * 12)
             return f"{feet}′{inches}″"
 
-        if "RelHt" in df_summary.columns:
-            df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
-        if "Ext" in df_summary.columns:
-            df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
+        # convert height-based columns to ft/in
+        df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
+        df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
 
         st.markdown("### Pitch Summary by Type")
         fig2, ax2 = plt.subplots(figsize=(6, 1.5))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
-
