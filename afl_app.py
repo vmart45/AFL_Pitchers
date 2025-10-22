@@ -293,39 +293,64 @@ def pitch_table(df, ax, fontsize: int = 8):
     ax.axis("off")
     return ax
     
+# --- Summary table (single, robust block) ---
 if not df.is_empty():
     total_pitches = df.height
 
-    summary = (
-        df.group_by("type__description")
-        .agg([
-            pl.count().alias("Count"),
-            (pl.count() / total_pitches * 100).alias("Mix%"),
-            pl.col("startSpeed").mean().alias("Velo"),
-            pl.col("spinRate").mean().alias("Spin"),
-            pl.col("breakVerticalInduced").mean().alias("IVB"),
-            pl.col("breakHorizontal").mean().alias("HB"),
-            pl.col("releasePosZ").mean().alias("RelHt"),
-            pl.col("extension").mean().alias("Ext"),
-        ])
-        .sort("Count", descending=True)
+    # choose best available release-height column
+    rel_ht_col = (
+        "z0" if "z0" in df.columns
+        else ("releasePosZ" if "releasePosZ" in df.columns else None)
     )
 
-    if not summary.is_empty():
+    agg_exprs = [
+        pl.count().alias("Count"),
+        (pl.count() / total_pitches * 100).alias("Mix%"),
+    ]
+    if "startSpeed" in df.columns:
+        agg_exprs.append(pl.col("startSpeed").mean().alias("Velo"))
+    if "spinRate" in df.columns:
+        agg_exprs.append(pl.col("spinRate").mean().alias("Spin"))
+    if "breakVerticalInduced" in df.columns:
+        agg_exprs.append(pl.col("breakVerticalInduced").mean().alias("IVB"))
+    if "breakHorizontal" in df.columns:
+        agg_exprs.append(pl.col("breakHorizontal").mean().alias("HB"))
+    if rel_ht_col:
+        agg_exprs.append(pl.col(rel_ht_col).mean().alias("RelHt"))
+    if "extension" in df.columns:
+        agg_exprs.append(pl.col("extension").mean().alias("Ext"))
+
+    summary = (
+        df.group_by("type__description")
+          .agg(agg_exprs)
+          .sort("Count", descending=True)
+    )
+
+    if summary.height > 0:
         df_summary = summary.to_pandas()
 
-        def format_feet_inches(decimal_value):
-            if pd.isna(decimal_value):
+        # round/format numeric columns that exist
+        for col in ["Velo", "IVB", "HB"]:
+            if col in df_summary.columns:
+                df_summary[col] = df_summary[col].round(1)
+        if "Spin" in df_summary.columns:
+            df_summary["Spin"] = df_summary["Spin"].round(0)
+        if "Mix%" in df_summary.columns:
+            df_summary["Mix%"] = df_summary["Mix%"].round(1)
+
+        # feet/inches helper
+        def _ft_in(v):
+            if pd.isna(v):
                 return "-"
-            feet = int(decimal_value)
-            inches = round((decimal_value - feet) * 12)
+            feet = int(v)
+            inches = round((v - feet) * 12)
             return f"{feet}′{inches}″"
 
         for col in ["RelHt", "Ext"]:
             if col in df_summary.columns:
-                df_summary[col] = df_summary[col].apply(format_feet_inches)
-                
-        fig2, ax2 = plt.subplots(figsize=(6, 1.5))
+                df_summary[col] = df_summary[col].apply(_ft_in)
+
+        st.markdown("### Pitch Summary by Type")
+        fig2, ax2 = plt.subplots(figsize=(6, 1.3))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
-
