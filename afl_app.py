@@ -170,12 +170,10 @@ else:
 
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(4, 3.5))  # much smaller footprint
+    fig, ax = plt.subplots(figsize=(4, 3.5))
 
     for group_tuple in df.group_by("type__description"):
-        pitch_type = group_tuple[0]
-        if isinstance(pitch_type, tuple):
-            pitch_type = pitch_type[0]
+        pitch_type = group_tuple[0][0] if isinstance(group_tuple[0], tuple) else group_tuple[0]
         group = group_tuple[1]
 
         color = PITCH_COLORS.get(pitch_type, "gray")
@@ -196,7 +194,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
-    # Compact legend: place outside, smaller text
     ax.legend(
         frameon=False,
         bbox_to_anchor=(1.02, 0.5),
@@ -218,8 +215,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.grid(True, linestyle="--", alpha=0.3)
 
     st.pyplot(fig, clear_figure=True)
-else:
-    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
 
     if not df.is_empty():
         summary = (
@@ -239,5 +234,5 @@ else:
             st.dataframe(summary.to_pandas(), use_container_width=True)
         else:
             st.info("No pitch data available for this selection.")
-
-
+else:
+    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
