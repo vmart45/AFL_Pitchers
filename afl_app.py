@@ -222,26 +222,37 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
 
     st.pyplot(fig, clear_figure=True)
 
+def format_feet_inches(decimal_value):
+    if decimal_value is None or pl.Series([decimal_value]).is_null().any():
+        return "-"
+    feet = int(decimal_value)
+    inches = round((decimal_value - feet) * 12)
+    return f"{feet}′{inches}″"
+
+
 def pitch_table(df, ax, fontsize: int = 8):
-    # simplify column names
+    # rename + reorder columns
     df = df.rename(columns={
         "type__description": "Pitch",
-        "Pitches": "Count",
-        "Avg Velo": "Velo",
-        "Avg IVB": "IVB",
-        "Avg HB": "HB",
-        "Avg Extension": "Ext",
-        "Avg Spin Rate": "Spin"
-    })
+        "Count": "Count",
+        "Mix%": "Mix%",
+        "Velo": "Velo",
+        "Spin": "Spin",
+        "IVB": "IVB",
+        "HB": "HB",
+        "RelHt": "RelHt",
+        "Ext": "Ext"
+    })[["Pitch", "Count", "Mix%", "Velo", "Spin", "IVB", "HB", "RelHt", "Ext"]]
 
     # round numeric columns
-    for col in ["Velo", "IVB", "HB", "Ext"]:
+    for col in ["Velo", "IVB", "HB", "Mix%"]:
         if col in df.columns:
             df[col] = df[col].round(1)
     if "Spin" in df.columns:
         df["Spin"] = df["Spin"].round(0)
+    if "Mix%" in df.columns:
+        df["Mix%"] = df["Mix%"].astype(str) + "%"
 
-    # build table
     table_plot = ax.table(
         cellText=df.values,
         colLabels=df.columns,
@@ -254,41 +265,55 @@ def pitch_table(df, ax, fontsize: int = 8):
     table_plot.set_fontsize(fontsize)
     table_plot.scale(1, 0.55)
 
-    # styling
     for (row, col), cell in table_plot.get_celld().items():
         if row == 0:
-            # header row: white background, black text
+            # header row
             cell.set_facecolor("#FFFFFF")
             cell.set_text_props(weight="bold", color="#000000")
         else:
             if col == 0:
-                # pitch name cell: color-coded background, white text
                 pitch_name = cell.get_text().get_text()
                 color = PITCH_COLORS.get(pitch_name, "#999999")
                 cell.set_facecolor(color)
                 cell.set_text_props(weight="bold", color="#FFFFFF", fontsize=fontsize)
             else:
-                # regular data cell: white background, black text
                 cell.set_facecolor("#FFFFFF")
                 cell.set_text_props(color="#000000", fontsize=fontsize)
 
     ax.axis("off")
     return ax
-
-
+    
 if not df.is_empty():
+    total_pitches = df.height
+
     summary = (
         df.group_by("type__description")
         .agg([
-            pl.count().alias("Pitches"),
-            pl.col("startSpeed").mean().alias("Avg Velo"),
-            pl.col("breakVerticalInduced").mean().alias("Avg IVB"),
-            pl.col("breakHorizontal").mean().alias("Avg HB"),
-            pl.col("extension").mean().alias("Avg Extension"),
-            pl.col("spinRate").mean().alias("Avg Spin Rate"),
+            pl.count().alias("Count"),
+            (pl.count() / total_pitches * 100).alias("Mix%"),
+            pl.col("startSpeed").mean().alias("Velo"),
+            pl.col("spinRate").mean().alias("Spin"),
+            pl.col("breakVerticalInduced").mean().alias("IVB"),
+            pl.col("breakHorizontal").mean().alias("HB"),
+            pl.col("releasePosZ").mean().alias("RelHt"),
+            pl.col("extension").mean().alias("Ext"),
         ])
-        .sort("Pitches", descending=True)
+        .sort("Count", descending=True)
     )
+
+    if not summary.is_empty():
+        df_summary = summary.to_pandas()
+
+        # convert decimal height values to ft-in format
+        if "RelHt" in df_summary.columns:
+            df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
+        if "Ext" in df_summary.columns:
+            df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
+
+        st.markdown("### Pitch Summary by Type")
+        fig2, ax2 = plt.subplots(figsize=(6, 1.6))
+        pitch_table(df_summary, ax2, fontsize=7)
+        st.pyplot(fig2, clear_figure=True)
 
     if not summary.is_empty():
         df_summary = summary.to_pandas()
