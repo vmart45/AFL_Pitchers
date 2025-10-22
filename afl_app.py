@@ -311,7 +311,7 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
-  if not df.is_empty():
+if not df.is_empty():
     total_pitches = df.height
 
     # identify best-guess column names present in df
