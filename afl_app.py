@@ -447,7 +447,7 @@ if not df.is_empty():
           .sort("Count", descending=True)
     )
 
-  if summary.height > 0:
+if summary.height > 0:
     df_summary = summary.to_pandas()
     df_summary["type__description"] = df_summary["type__description"].apply(normalize_pitch_name)
 
