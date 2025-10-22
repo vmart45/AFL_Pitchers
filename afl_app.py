@@ -227,10 +227,10 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         .agg([
             pl.count().alias("Pitches"),
             pl.col("startSpeed").mean().round(1).alias("Velo"),
+            pl.col("spinRate").mean().round(0).alias("Spin"),          
             pl.col("breakVerticalInduced").mean().round(1).alias("Induced Vert. Break"),
-            pl.col("breakHorizontal").mean().round(1).alias("Horizontal Break"),
+            pl.col("breakHorizontal").mean().round(1).alias("Horz. Break"),
             pl.col("extension").mean().round(1).alias("Extension"),
-            pl.col("spinRate").mean().round(0).alias("Spin Rate"),
         ])
         .rename({"type__description": "Pitch Type"})
         .sort("Pitches", descending=True)
@@ -244,11 +244,11 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         gb.configure_default_column(resizable=True, sortable=True, filter=True)
         gb.configure_grid_options(domLayout='autoHeight')
         gb.configure_column("Pitch Type", cellStyle={"fontWeight": "bold"})
-        gb.configure_column("Avg Velo", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Avg IVB", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Avg HB", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Velo", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Spin", valueFormatter="x.toFixed(0)")
+        gb.configure_column("Induced Vert. Break", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Horz. Break", valueFormatter="x.toFixed(1)")
         gb.configure_column("Avg Extension", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Avg Spin Rate", valueFormatter="x.toFixed(0)")
         grid_options = gb.build()
 
         AgGrid(
