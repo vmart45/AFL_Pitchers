@@ -84,7 +84,7 @@ PITCH_COLORS = {
     "Slurve": "#DDB33A",
     "Slider": "#EEE716",
     "Gyroball": "#FFFF99",
-    "Sweeper": "#93AFD4",
+    "Sweeper": "#DDB33A",
     "Curveball": "#00D1ED",
     "Knuckle Curve": "#6236CD",
     "Knuckleball": "#3C44CD",
