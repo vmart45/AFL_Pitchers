@@ -472,8 +472,8 @@ if summary.height > 0:
     if table:
         for key, cell in table.get_celld().items():
             if key[0] == 0:
-                cell.set_height(0.09)  # tighten header
-            cell.set_width(0.14)
+                cell.set_height(0.07)  # tighten header
+            cell.set_width(0.16)
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
