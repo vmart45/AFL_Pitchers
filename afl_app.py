@@ -256,7 +256,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
             gridOptions=grid_options,
             height=220,
             fit_columns_on_grid_load=True,
-            theme="alpine",
+            theme="material",
         )
     else:
         st.info("No pitch data available for this selection.")
