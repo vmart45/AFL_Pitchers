@@ -282,7 +282,7 @@ with col2:
 # --- Pitch movement plot ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(4, 3.5))
+    fig, ax = plt.subplots(figsize=(3.5, 3.3))
 
     if "type__description" in df.columns:
         pitch_counts = (
@@ -329,7 +329,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         fontsize=6,
         title=None,
         columnspacing=1.0,
-        handlelength=1.8,
+        handlelength=1.5,
         handletextpad=0.4,
     )
     legend.get_frame().set_facecolor("white")
