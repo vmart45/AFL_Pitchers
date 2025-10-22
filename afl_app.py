@@ -226,11 +226,11 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         df.group_by("type__description")
         .agg([
             pl.count().alias("Pitches"),
-            pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
-            pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
-            pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
-            pl.col("extension").mean().round(1).alias("Avg Extension"),
-            pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
+            pl.col("startSpeed").mean().round(1).alias("Velo"),
+            pl.col("breakVerticalInduced").mean().round(1).alias("Induced Vert. Break"),
+            pl.col("breakHorizontal").mean().round(1).alias("Horizontal Break"),
+            pl.col("extension").mean().round(1).alias("Extension"),
+            pl.col("spinRate").mean().round(0).alias("Spin Rate"),
         ])
         .rename({"type__description": "Pitch Type"})
         .sort("Pitches", descending=True)
