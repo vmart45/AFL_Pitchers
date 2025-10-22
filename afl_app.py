@@ -5,6 +5,10 @@ import polars as pl
 import streamlit as st
 import matplotlib.pyplot as plt
 
+st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
+st.title("🎯 Arizona Fall League Pitch Movement Dashboard")
+
+
 CACHE_FILE = "afl_cache.parquet"
 
 def seconds_until_next_8am_pt(now_utc: dt.datetime | None = None) -> int:
@@ -130,13 +134,6 @@ def load_or_fetch_data():
         if not df.is_empty():
             df.write_parquet(CACHE_FILE)
     return df
-
-
-if st.button("🔄 Refresh Data"):
-    if os.path.exists(CACHE_FILE):
-        os.remove(CACHE_FILE)
-    load_afl_data.clear()
-    st.experimental_rerun()
 
 df = load_or_fetch_data()
 
