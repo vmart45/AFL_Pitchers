@@ -169,12 +169,10 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
-# --- Pitch Movement Plot + Summary (drop-in) ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(4, 3.5))  # compact
+    fig, ax = plt.subplots(figsize=(4, 3.5))
 
-    # iterate unique pitch types so we keep consistent colors & legend
     pitch_types_present = (
         df["type__description"].drop_nulls().unique().to_list()
         if "type__description" in df.columns else []
@@ -184,7 +182,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         g = df.filter(pl.col("type__description") == pt)
         if g.is_empty():
             continue
-
         color = PITCH_COLORS.get(pt, "gray")
         ax.scatter(
             g["breakHorizontal"],
@@ -203,7 +200,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
-    # small, off-plot legend
     ax.legend(
         frameon=False,
         bbox_to_anchor=(1.02, 0.5),
@@ -221,34 +217,48 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
     ax.set_ylabel("Induced Vertical Break (in.)", fontsize=7, labelpad=6)
     ax.grid(True, linestyle="--", alpha=0.3)
-
-    # hide y ticks/labels per your request
     ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
 
     st.pyplot(fig, clear_figure=True)
 
-    # ---- Summary table under plot ----
-if not summary.is_empty():
-    summary = summary.rename({"type__description": "Pitch Type"})
-    df_summary = summary.to_pandas()
-
-    gb = GridOptionsBuilder.from_dataframe(df_summary)
-    gb.configure_default_column(resizable=True, sortable=True, filter=True)
-    gb.configure_grid_options(domLayout='autoHeight')
-    gb.configure_column("Pitch Type", cellStyle={"fontWeight": "bold"})
-    gb.configure_column("Avg Velo", type=["numericColumn"], valueFormatter="x.toFixed(1)")
-    gb.configure_column("Avg IVB", type=["numericColumn"], valueFormatter="x.toFixed(1)")
-    gb.configure_column("Avg HB", type=["numericColumn"], valueFormatter="x.toFixed(1)")
-    gb.configure_column("Avg Extension", type=["numericColumn"], valueFormatter="x.toFixed(1)")
-    gb.configure_column("Avg Spin Rate", type=["numericColumn"], valueFormatter="x.toFixed(0)")
-
-    grid_options = gb.build()
-
-    st.markdown("### Pitch Summary by Type")
-    AgGrid(
-        df_summary,
-        gridOptions=grid_options,
-        height=200,
-        fit_columns_on_grid_load=True,
-        theme="alpine",  # also try "material" or "streamlit"
+    # ---- summary table ----
+    summary = (
+        df.group_by("type__description")
+        .agg([
+            pl.count().alias("Pitches"),
+            pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
+            pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
+            pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
+            pl.col("extension").mean().round(1).alias("Avg Extension"),
+            pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
+        ])
+        .rename({"type__description": "Pitch Type"})
+        .sort("Pitches", descending=True)
     )
+
+    if not summary.is_empty():
+        df_summary = summary.to_pandas()
+        st.markdown("### Pitch Summary by Type")
+
+        gb = GridOptionsBuilder.from_dataframe(df_summary)
+        gb.configure_default_column(resizable=True, sortable=True, filter=True)
+        gb.configure_grid_options(domLayout='autoHeight')
+        gb.configure_column("Pitch Type", cellStyle={"fontWeight": "bold"})
+        gb.configure_column("Avg Velo", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Avg IVB", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Avg HB", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Avg Extension", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Avg Spin Rate", valueFormatter="x.toFixed(0)")
+        grid_options = gb.build()
+
+        AgGrid(
+            df_summary,
+            gridOptions=grid_options,
+            height=220,
+            fit_columns_on_grid_load=True,
+            theme="alpine",
+        )
+    else:
+        st.info("No pitch data available for this selection.")
+else:
+    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
