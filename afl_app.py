@@ -183,15 +183,62 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
+def get_pitcher_bio(pitcher_id: int):
+    """Fetch basic bio info from MLB Stats API."""
+    try:
+        url = f"https://statsapi.mlb.com/api/v1/people/{pitcher_id}"
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            data = r.json().get("people", [{}])[0]
+            full_name = data.get("fullName", "Unknown")
+            height = data.get("height", "-")
+            weight = data.get("weight", "-")
+            birth_date = data.get("birthDate", "-")
+            team = data.get("currentTeam", {}).get("name", "-")
+            throws = data.get("pitchHand", {}).get("description", "-")
+            position = data.get("primaryPosition", {}).get("name", "-")
+
+            return {
+                "Name": full_name,
+                "Team": team,
+                "Position": position,
+                "Throws": throws,
+                "Height": height,
+                "Weight": f"{weight} lbs" if isinstance(weight, (int, float)) else weight,
+                "Birth Date": birth_date
+            }
+    except Exception:
+        pass
+    return None
+
+# --- Pitcher Bio ---
+if "pitcher_id" in df.columns and not df.is_empty():
+    pitcher_id = df["pitcher_id"][0]
+    bio = get_pitcher_bio(pitcher_id)
+    if bio:
+        st.markdown(f"### {bio['Name']}")
+        st.markdown(
+            f"**Team:** {bio['Team']}  |  **Throws:** {bio['Throws']}  |  "
+            f"**Position:** {bio['Position']}  |  **Height:** {bio['Height']}  |  "
+            f"**Weight:** {bio['Weight']}  |  **Born:** {bio['Birth Date']}"
+        )
+
+
 # --- Pitch movement plot ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(4, 3.5))
 
-    pitch_types_present = (
-        df["type__description"].drop_nulls().unique().to_list()
-        if "type__description" in df.columns else []
+    if "type__description" in df.columns:
+    pitch_counts = (
+        df.group_by("type__description")
+          .count()
+          .sort("count", descending=True)
+          .to_pandas()
     )
+    pitch_types_present = pitch_counts["type__description"].tolist()
+else:
+    pitch_types_present = []
 
     for pt in pitch_types_present:
         g = df.filter(pl.col("type__description") == pt)
