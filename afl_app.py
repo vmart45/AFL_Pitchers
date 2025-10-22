@@ -341,7 +341,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
 
     plt.tight_layout(pad=1)
-    st.pyplot(fig, clear_figure=True)
+    st.pyplot(fig, clear_figure=True, use_container_width=False)
 
 
 def format_feet_inches(decimal_value):
