@@ -251,7 +251,6 @@ def infer_pitcher_team(df):
 
     return "Unknown"
     
-# --- Pitcher Bio Section ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     if not df.is_empty():
@@ -263,21 +262,21 @@ with col2:
         bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
 
         if bio:
-            team_name = infer_pitcher_team(df)
             st.markdown(
-              f"<h3 style='text-align:center; margin-bottom:2px; font-weight:700;'>{bio['Name']}</h3>"
-            f"<h5 style='text-align:center; color:#555; margin-top:0px; font-weight:600;'>({team_name})</h5>",
-            unsafe_allow_html=True
-    )
-        st.markdown(
-            f"<p style='text-align:center; font-size:15px;'>"
-            f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
-            f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
-            f"| <b>Born:</b> {bio['Birth City']}, {bio['Birth State']}, {bio['Birth Country']} — "
-            f"{bio['Birth Date']} ({bio['Age']} yrs old)"
-            f"</p>",
-            unsafe_allow_html=True
-    )
+                f"<h3 style='text-align:center; margin-bottom:2px; font-weight:700;'>{bio['Name']}</h3>"
+                f"<h5 style='text-align:center; color:#555; margin-top:0px; font-weight:600;'>({team_name})</h5>",
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f"<p style='text-align:center; font-size:15px;'>"
+                f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
+                f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
+                f"| <b>Born:</b> {bio.get('Birthplace', '-')} — {bio.get('Birth Date', '-')} "
+                f"({bio.get('Age', '?')} yrs old)"
+                f"</p>",
+                unsafe_allow_html=True
+            )
+
 
 
 # --- Pitch movement plot ---
