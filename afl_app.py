@@ -4,6 +4,7 @@ import os
 import polars as pl
 import streamlit as st
 import matplotlib.pyplot as plt
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
 st.title("Arizona Fall League Pitcher Dashboard")
@@ -227,25 +228,27 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     st.pyplot(fig, clear_figure=True)
 
     # ---- Summary table under plot ----
-    if not df.is_empty():
-        summary = (
-            df.group_by("type__description")
-              .agg([
-                  pl.count().alias("Pitches"),
-                  pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
-                  pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
-                  pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
-                  pl.col("extension").mean().round(1).alias("Avg Extension"),
-                  pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
-              ])
-              .rename({"type__description": "Pitch Type"})
-              .sort("Pitches", descending=True)
-        )
+if not summary.is_empty():
+    summary = summary.rename({"type__description": "Pitch Type"})
+    df_summary = summary.to_pandas()
 
-        if not summary.is_empty():
-            st.markdown("### Pitch Summary by Type")
-            st.dataframe(summary.to_pandas(), use_container_width=True)
-        else:
-            st.info("No pitch data available for this selection.")
-else:
-    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
+    gb = GridOptionsBuilder.from_dataframe(df_summary)
+    gb.configure_default_column(resizable=True, sortable=True, filter=True)
+    gb.configure_grid_options(domLayout='autoHeight')
+    gb.configure_column("Pitch Type", cellStyle={"fontWeight": "bold"})
+    gb.configure_column("Avg Velo", type=["numericColumn"], valueFormatter="x.toFixed(1)")
+    gb.configure_column("Avg IVB", type=["numericColumn"], valueFormatter="x.toFixed(1)")
+    gb.configure_column("Avg HB", type=["numericColumn"], valueFormatter="x.toFixed(1)")
+    gb.configure_column("Avg Extension", type=["numericColumn"], valueFormatter="x.toFixed(1)")
+    gb.configure_column("Avg Spin Rate", type=["numericColumn"], valueFormatter="x.toFixed(0)")
+
+    grid_options = gb.build()
+
+    st.markdown("### Pitch Summary by Type")
+    AgGrid(
+        df_summary,
+        gridOptions=grid_options,
+        height=200,
+        fit_columns_on_grid_load=True,
+        theme="alpine",  # also try "material" or "streamlit"
+    )
