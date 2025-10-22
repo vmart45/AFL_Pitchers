@@ -252,21 +252,23 @@ def infer_pitcher_team(df):
     return "Unknown"
     
 # --- Pitcher Bio Section ---
-if not df.is_empty():
-    pitcher_id = None
-    if "pitcher_id" in df.columns:
-        pitcher_id = int(df["pitcher_id"][0])
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if not df.is_empty():
+        pitcher_id = None
+        if "pitcher_id" in df.columns:
+            pitcher_id = int(df["pitcher_id"][0])
 
-    team_name = infer_pitcher_team(df)
-    bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
+        team_name = infer_pitcher_team(df)
+        bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
 
-    if bio:
-        st.markdown(f"### {bio['Name']} ({team_name})")
-        st.markdown(
-            f"**Throws/Bats:** {bio['Throws']} / {bio['Bats']}  |  "
-            f"**Height/Weight:** {bio['Height']}, {bio['Weight']}  |  "
-            f"**Born:** {bio['Birthplace']} — {bio['Birth Date']} "
-            f"({bio['Age']} yrs old)"
+        if bio:
+            st.markdown(f"### {bio['Name']} ({team_name})")
+            st.markdown(
+                f"**Throws/Bats:** {bio['Throws']} / {bio['Bats']}  |  "
+                f"**Height/Weight:** {bio['Height']}, {bio['Weight']}  |  "
+                f"**Born:** {bio['Birthplace']} — {bio['Birth Date']} "
+                f"({bio['Age']} yrs old)"
         )
     else:
         st.info(f"⚾ Bio unavailable — {team_name}")
