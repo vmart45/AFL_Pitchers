@@ -1,6 +1,7 @@
 import datetime as dt
 from zoneinfo import ZoneInfo
 import os
+import requests
 import pandas as pd
 import polars as pl
 import streamlit as st
