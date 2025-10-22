@@ -358,6 +358,32 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
+if not df.is_empty():
+    total_pitches = df.height
+
+    # build aggregation expressions dynamically
+    agg_exprs = [pl.count().alias("Count"),
+                 (pl.count() / total_pitches * 100).alias("Mix%")]
+
+    if "startSpeed" in df.columns:
+        agg_exprs.append(pl.col("startSpeed").mean().alias("Velo"))
+    if "spinRate" in df.columns:
+        agg_exprs.append(pl.col("spinRate").mean().alias("Spin"))
+    if "breakVerticalInduced" in df.columns:
+        agg_exprs.append(pl.col("breakVerticalInduced").mean().alias("IVB"))
+    if "breakHorizontal" in df.columns:
+        agg_exprs.append(pl.col("breakHorizontal").mean().alias("HB"))
+    if "z0" in df.columns:
+        agg_exprs.append(pl.col("z0").mean().alias("RelHt"))
+    if "extension" in df.columns:
+        agg_exprs.append(pl.col("extension").mean().alias("Ext"))
+
+    summary = (
+        df.group_by("type__description")
+        .agg(agg_exprs)
+        .sort("Count", descending=True)
+    )
+
     if not summary.is_empty():
         df_summary = summary.to_pandas()
 
@@ -368,10 +394,12 @@ if not df.is_empty():
             inches = round((decimal_value - feet) * 12)
             return f"{feet}′{inches}″"
 
-        df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
-        df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
+        for col in ["RelHt", "Ext"]:
+            if col in df_summary.columns:
+                df_summary[col] = df_summary[col].apply(format_feet_inches)
 
         st.markdown("### Pitch Summary by Type")
         fig2, ax2 = plt.subplots(figsize=(6, 1.5))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
+
