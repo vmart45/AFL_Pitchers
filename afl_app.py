@@ -235,18 +235,19 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
               .count()
               .sort("count", descending=True)
               .to_pandas()
-    )
-    pitch_types_present = pitch_counts["type__description"].tolist()
-else:
-    pitch_types_present = []
+        )
+        pitch_types_present = pitch_counts["type__description"].tolist()
+    else:
+        pitch_types_present = []
 
     for pt in pitch_types_present:
         g = df.filter(pl.col("type__description") == pt)
         if g.is_empty():
             continue
-        color = PITCH_COLORS.get(pt, "gray")
+
         pt_norm = normalize_pitch_name(pt)
         color = PITCH_COLORS.get(pt_norm, "gray")
+
         ax.scatter(
             g["breakHorizontal"],
             g["breakVerticalInduced"],
@@ -264,27 +265,25 @@ else:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
-# Legend styled like example image
+    # Legend styled like example image
     legend = ax.legend(
         frameon=True,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.25),   # move below plot
-        ncol=min(len(pitch_types_present), 4),  # spread across columns
+        bbox_to_anchor=(0.5, -0.25),
+        ncol=min(len(pitch_types_present), 4),
         fontsize=6,
         title=None,
         columnspacing=1.0,
         handlelength=1.8,
         handletextpad=0.4,
-)
-
+    )
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("lightgray")
     legend.get_frame().set_linewidth(0.5)
 
-
     formatted_date = format_date_pretty(selected_date)
     ax.set_title(
-        f"Pitch Movement",
+        f"Pitch Movement — {selected_pitcher} ({formatted_date})",
         fontsize=8, fontweight="bold", pad=8
     )
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
@@ -294,6 +293,7 @@ else:
 
     plt.tight_layout(pad=1)
     st.pyplot(fig, clear_figure=True)
+
 
 def format_feet_inches(decimal_value):
     if decimal_value is None or pl.Series([decimal_value]).is_null().any():
