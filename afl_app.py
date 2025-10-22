@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
-st.title("Arizona Fall League Pitcher Dashboard")
+st.title("AFL Pitcher Dashboard")
 
 
 CACHE_FILE = "afl_cache.parquet"
