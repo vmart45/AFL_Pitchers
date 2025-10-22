@@ -168,21 +168,32 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
+# --- Pitch Movement Plot + Summary (drop-in) ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(4, 3.5))
+    fig, ax = plt.subplots(figsize=(4, 3.5))  # compact
 
-    for pitch_type, group in df.group_by("type__description"):
-        color = PITCH_COLORS.get(pitch_type, "gray")
+    # iterate unique pitch types so we keep consistent colors & legend
+    pitch_types_present = (
+        df["type__description"].drop_nulls().unique().to_list()
+        if "type__description" in df.columns else []
+    )
+
+    for pt in pitch_types_present:
+        g = df.filter(pl.col("type__description") == pt)
+        if g.is_empty():
+            continue
+
+        color = PITCH_COLORS.get(pt, "gray")
         ax.scatter(
-            group["breakHorizontal"],
-            group["breakVerticalInduced"],
-            label=pitch_type,
+            g["breakHorizontal"],
+            g["breakVerticalInduced"],
+            label=pt,
             color=color,
             alpha=0.8,
             s=15,
             edgecolors="black",
-            linewidths=0.3
+            linewidths=0.3,
         )
 
     ax.set_xlim(-25, 25)
@@ -191,49 +202,50 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
+    # small, off-plot legend
     ax.legend(
         frameon=False,
         bbox_to_anchor=(1.02, 0.5),
         loc="center left",
         fontsize=6,
         title="Pitch Type",
-        title_fontsize=6
+        title_fontsize=6,
     )
 
     formatted_date = format_date_pretty(selected_date)
     ax.set_title(
         f"Pitch Movement — {selected_pitcher} ({formatted_date})",
-        fontsize=8,
-        fontweight="bold",
-        pad=8
+        fontsize=8, fontweight="bold", pad=8
     )
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
     ax.set_ylabel("Induced Vertical Break (in.)", fontsize=7, labelpad=6)
     ax.grid(True, linestyle="--", alpha=0.3)
+
+    # hide y ticks/labels per your request
     ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
 
     st.pyplot(fig, clear_figure=True)
 
+    # ---- Summary table under plot ----
     if not df.is_empty():
         summary = (
             df.group_by("type__description")
-            .agg([
-                pl.count().alias("Pitches"),
-                pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
-                pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
-                pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
-                pl.col("extension").mean().round(1).alias("Avg Extension"),
-                pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
-            ])
-            .sort("Pitches", descending=True)
+              .agg([
+                  pl.count().alias("Pitches"),
+                  pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
+                  pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
+                  pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
+                  pl.col("extension").mean().round(1).alias("Avg Extension"),
+                  pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
+              ])
+              .rename({"type__description": "Pitch Type"})
+              .sort("Pitches", descending=True)
         )
 
         if not summary.is_empty():
-            summary = summary.rename({"type__description": "Pitch Type"})
             st.markdown("### Pitch Summary by Type")
             st.dataframe(summary.to_pandas(), use_container_width=True)
         else:
             st.info("No pitch data available for this selection.")
 else:
     st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
-
