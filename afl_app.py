@@ -194,47 +194,36 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
 # --- Pitch summary table ---
 if not df.is_empty():
     total_pitches = df.height
-    rel_ht_col = (
-        "z0" if "z0" in df.columns
-        else ("releasePosZ" if "releasePosZ" in df.columns else None)
-    )
-
-    agg_exprs = [
-        pl.count().alias("Count"),
-        (pl.count() / total_pitches * 100).alias("Mix%"),
-    ]
-    if "startSpeed" in df.columns:
-        agg_exprs.append(pl.col("startSpeed").mean().alias("Velo"))
-    if "spinRate" in df.columns:
-        agg_exprs.append(pl.col("spinRate").mean().alias("Spin"))
-    if "breakVerticalInduced" in df.columns:
-        agg_exprs.append(pl.col("breakVerticalInduced").mean().alias("IVB"))
-    if "breakHorizontal" in df.columns:
-        agg_exprs.append(pl.col("breakHorizontal").mean().alias("HB"))
-    if rel_ht_col:
-        agg_exprs.append(pl.col(rel_ht_col).mean().alias("RelHt"))
-    if "extension" in df.columns:
-        agg_exprs.append(pl.col("extension").mean().alias("Ext"))
 
     summary = (
         df.group_by("type__description")
-          .agg(agg_exprs)
-          .sort("Count", descending=True)
+        .agg([
+            pl.count().alias("Count"),
+            (pl.count() / total_pitches * 100).alias("Mix%"),
+            pl.col("startSpeed").mean().alias("Velo"),
+            pl.col("spinRate").mean().alias("Spin"),
+            pl.col("breakVerticalInduced").mean().alias("IVB"),
+            pl.col("breakHorizontal").mean().alias("HB"),
+            pl.col("z0").mean().alias("RelHt"),
+            pl.col("extension").mean().alias("Ext"),
+        ])
+        .sort("Count", descending=True)
     )
 
-    if summary.height > 0:
+    if not summary.is_empty():
         df_summary = summary.to_pandas()
         df_summary["type__description"] = df_summary["type__description"].apply(normalize_pitch_name)
 
-        for col in ["Velo", "IVB", "HB"]:
+        # round and format
+        for col in ["Velo", "IVB", "HB", "Mix%"]:
             if col in df_summary.columns:
                 df_summary[col] = df_summary[col].round(1)
         if "Spin" in df_summary.columns:
             df_summary["Spin"] = df_summary["Spin"].round(0)
         if "Mix%" in df_summary.columns:
-            df_summary["Mix%"] = df_summary["Mix%"].round(1)
+            df_summary["Mix%"] = df_summary["Mix%"].astype(str) + "%"
 
-        def _ft_in(v):
+        def format_feet_inches(v):
             if pd.isna(v):
                 return "-"
             feet = int(v)
@@ -243,7 +232,9 @@ if not df.is_empty():
 
         for col in ["RelHt", "Ext"]:
             if col in df_summary.columns:
-                df_summary[col] = df_summary[col].apply(_ft_in)
+                df_summary[col] = df_summary[col].apply(format_feet_inches)
 
         st.markdown("### Pitch Summary by Type")
-        st.dataframe(df_summary, use_container_width=True)
+        fig2, ax2 = plt.subplots(figsize=(6, 1.5))
+        pitch_table(df_summary, ax2, fontsize=7)
+        st.pyplot(fig2, clear_figure=True)
