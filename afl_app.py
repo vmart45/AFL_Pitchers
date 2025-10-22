@@ -263,9 +263,9 @@ def pitch_table(df, ax, fontsize: int = 8):
                 pitch_name = cell.get_text().get_text()
                 color = PITCH_COLORS.get(pitch_name, "#FFFFFF")
                 cell.set_facecolor(color)
-                cell.set_text_props(weight="bold", color="black", fontsize=fontsize)
+                cell.set_text_props(weight="bold", color="white", fontsize=fontsize)
             else:
-                cell.set_facecolor("#FAFAFA")
+                cell.set_facecolor("#000000")
 
     ax.axis("off")
     return ax
@@ -286,7 +286,6 @@ if not df.is_empty():
 
     if not summary.is_empty():
         df_summary = summary.to_pandas()
-        st.markdown("### Pitch Summary by Type")
 
         fig2, ax2 = plt.subplots(figsize=(5.5, 1.6))
         pitch_table(df_summary, ax2, fontsize=7)
