@@ -311,79 +311,6 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
-if not df.is_empty():
-    total_pitches = df.height
-
-    # identify best-guess column names present in df
-    col_release_height = next((c for c in df.columns if "release" in c.lower() and "z" in c.lower()), None)
-    col_extension = next((c for c in df.columns if "extension" in c.lower()), None)
-    col_spin = next((c for c in df.columns if "spinrate" in c.lower()), None)
-
-    agg_exprs = [
-        pl.count().alias("Count"),
-        (pl.count() / total_pitches * 100).alias("Mix%"),
-        pl.col("startSpeed").mean().alias("Velo"),
-        pl.col("breakVerticalInduced").mean().alias("IVB"),
-        pl.col("breakHorizontal").mean().alias("HB"),
-    ]
-
-    if col_spin:
-        agg_exprs.append(pl.col(col_spin).mean().alias("Spin"))
-    if col_release_height:
-        agg_exprs.append(pl.col(col_release_height).mean().alias("RelHt"))
-    if col_extension:
-        agg_exprs.append(pl.col(col_extension).mean().alias("Ext"))
-
-    summary = (
-        df.group_by("type__description")
-        .agg(agg_exprs)
-        .sort("Count", descending=True)
-    )
-
-if not df.is_empty():
-    total_pitches = df.height
-
-    summary = (
-        df.group_by("type__description")
-        .agg([
-            pl.count().alias("Count"),
-            (pl.count() / total_pitches * 100).alias("Mix%"),
-            pl.col("startSpeed").mean().alias("Velo"),
-            pl.col("spinRate").mean().alias("Spin"),
-            pl.col("breakVerticalInduced").mean().alias("IVB"),
-            pl.col("breakHorizontal").mean().alias("HB"),
-            pl.col("z0").mean().alias("RelHt"),
-            pl.col("extension").mean().alias("Ext"),
-        ])
-        .sort("Count", descending=True)
-    )
-
-if not df.is_empty():
-    total_pitches = df.height
-
-    # build aggregation expressions dynamically
-    agg_exprs = [pl.count().alias("Count"),
-                 (pl.count() / total_pitches * 100).alias("Mix%")]
-
-    if "startSpeed" in df.columns:
-        agg_exprs.append(pl.col("startSpeed").mean().alias("Velo"))
-    if "spinRate" in df.columns:
-        agg_exprs.append(pl.col("spinRate").mean().alias("Spin"))
-    if "breakVerticalInduced" in df.columns:
-        agg_exprs.append(pl.col("breakVerticalInduced").mean().alias("IVB"))
-    if "breakHorizontal" in df.columns:
-        agg_exprs.append(pl.col("breakHorizontal").mean().alias("HB"))
-    if "z0" in df.columns:
-        agg_exprs.append(pl.col("z0").mean().alias("RelHt"))
-    if "extension" in df.columns:
-        agg_exprs.append(pl.col("extension").mean().alias("Ext"))
-
-    summary = (
-        df.group_by("type__description")
-        .agg(agg_exprs)
-        .sort("Count", descending=True)
-    )
-
     if not summary.is_empty():
         df_summary = summary.to_pandas()
 
@@ -397,8 +324,7 @@ if not df.is_empty():
         for col in ["RelHt", "Ext"]:
             if col in df_summary.columns:
                 df_summary[col] = df_summary[col].apply(format_feet_inches)
-
-        st.markdown("### Pitch Summary by Type")
+                
         fig2, ax2 = plt.subplots(figsize=(6, 1.5))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
