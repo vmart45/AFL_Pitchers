@@ -5,11 +5,9 @@ import pandas as pd
 import polars as pl
 import streamlit as st
 import matplotlib.pyplot as plt
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
 st.title("Arizona Fall League Pitcher Dashboard")
-
 
 CACHE_FILE = "afl_cache.parquet"
 
@@ -71,7 +69,7 @@ AFL_TEAMS = [
 ]
 
 PITCH_COLORS = {
-    "Four-Seam Fastball": "#D22D49",
+    "Fastball": "#D22D49",
     "Two-Seam Fastball": "#DE6A04",
     "Sinker": "#FE9D00",
     "Cutter": "#933F2C",
@@ -89,56 +87,25 @@ PITCH_COLORS = {
     "Slow Curve": "#0068FF"
 }
 
+def normalize_pitch_name(name: str) -> str:
+    if not isinstance(name, str):
+        return name
+    name_lower = name.lower().strip()
+    if "four" in name_lower and "seam" in name_lower:
+        return "Fastball"
+    if "4-seam" in name_lower or "4 seam" in name_lower:
+        return "Fastball"
+    if "fourseam" in name_lower:
+        return "Fastball"
+    return name
+
 def format_date_pretty(date_str: str) -> str:
     date = dt.datetime.strptime(str(date_str), "%Y-%m-%d").date()
     day = date.day
     suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return date.strftime(f"%b. {day}{suffix}, %Y")
 
-@st.cache_data(ttl=86400)
-def load_afl_data():
-    start = datetime.date(2025, 10, 1)
-    end = datetime.date.today()
-
-    dfs = []
-    all_cols = set()
-
-    for i in range((end - start).days + 1):
-        date = start + datetime.timedelta(days=i)
-        df_day = get_afl_data(date.strftime("%Y-%m-%d"))
-        if not df_day.is_empty():
-            dfs.append(df_day)
-            all_cols.update(df_day.columns)
-
-    if not dfs:
-        return pl.DataFrame()
-
-    all_cols = sorted(all_cols)
-    dfs_aligned = []
-    for df in dfs:
-        missing = set(all_cols) - set(df.columns)
-        if missing:
-            for col in missing:
-                df = df.with_columns(pl.lit(None).alias(col))
-        df = df.select(all_cols)
-        dfs_aligned.append(df)
-
-    df = pl.concat(dfs_aligned)
-    return df
-
-
-def load_or_fetch_data():
-    """Loads cached data or fetches new AFL data if cache missing."""
-    if os.path.exists(CACHE_FILE):
-        df = pl.read_parquet(CACHE_FILE)
-    else:
-        df = load_afl_data()
-        if not df.is_empty():
-            df.write_parquet(CACHE_FILE)
-    return df
-
 df = load_or_fetch_data()
-
 if not df.is_empty() and "home_team" in df.columns:
     df = df.filter(pl.col("home_team").is_in(AFL_TEAMS))
 
@@ -146,30 +113,15 @@ if df.is_empty():
     st.warning("No Arizona Fall League pitch data found.")
     st.stop()
 
-
 st.sidebar.header("Filters")
-
-# Pitcher
 pitchers = sorted(df["pitcher_name"].drop_nulls().unique().to_list())
 selected_pitcher = st.sidebar.selectbox("Select Pitcher", pitchers)
 df = df.filter(pl.col("pitcher_name") == selected_pitcher)
 
-# Game date
 dates = sorted(df["game_date"].unique().to_list())
 selected_date = st.sidebar.selectbox("Select Game Date", dates)
 df = df.filter(pl.col("game_date") == selected_date)
 
-if not df.is_empty():
-    csv_data = df.write_csv()
-    st.download_button(
-        label="⬇️ Download AFL Data (CSV)",
-        data=csv_data,
-        file_name=f"afl_data_{dt.date.today()}.csv",
-        mime="text/csv"
-    )
-
-
-# Pitch types
 if "type__description" in df.columns:
     pitch_types = sorted(df["type__description"].drop_nulls().unique().to_list())
     selected_pitch_types = st.sidebar.multiselect(
@@ -180,6 +132,7 @@ else:
     st.warning("Pitch type column not found.")
     st.stop()
 
+# --- Pitch movement plot ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(4, 3.5))
@@ -193,11 +146,12 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         g = df.filter(pl.col("type__description") == pt)
         if g.is_empty():
             continue
-        color = PITCH_COLORS.get(pt, "gray")
+        pt_norm = normalize_pitch_name(pt)
+        color = PITCH_COLORS.get(pt_norm, "gray")
         ax.scatter(
             g["breakHorizontal"],
             g["breakVerticalInduced"],
-            label=pt,
+            label=pt_norm,
             color=color,
             alpha=0.8,
             s=15,
@@ -211,103 +165,35 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
-# Legend styled like example image
     legend = ax.legend(
         frameon=True,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.25),   # move below plot
-        ncol=min(len(pitch_types_present), 4),  # spread across columns
+        bbox_to_anchor=(0.5, -0.25),
+        ncol=min(len(pitch_types_present), 4),
         fontsize=6,
         title=None,
         columnspacing=1.0,
         handlelength=1.8,
         handletextpad=0.4,
-)
-
-# make legend background white, light border
+    )
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("lightgray")
     legend.get_frame().set_linewidth(0.5)
 
-
     formatted_date = format_date_pretty(selected_date)
     ax.set_title(
-        f"Pitch Movement",
+        f"Pitch Movement — {selected_pitcher} ({formatted_date})",
         fontsize=8, fontweight="bold", pad=8
     )
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
     ax.set_ylabel("Induced Vertical Break (in.)", fontsize=7, labelpad=6)
     ax.grid(True, linestyle="--", alpha=0.3)
-    ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
-
+    plt.tight_layout(pad=1)
     st.pyplot(fig, clear_figure=True)
 
-def format_feet_inches(decimal_value):
-    if decimal_value is None or pl.Series([decimal_value]).is_null().any():
-        return "-"
-    feet = int(decimal_value)
-    inches = round((decimal_value - feet) * 12)
-    return f"{feet}′{inches}″"
-
-
-def pitch_table(df, ax, fontsize: int = 8):
-    # rename + reorder columns
-    df = df.rename(columns={
-        "type__description": "Pitch",
-        "Count": "Count",
-        "Mix%": "Mix%",
-        "Velo": "Velo",
-        "Spin": "Spin",
-        "IVB": "IVB",
-        "HB": "HB",
-        "RelHt": "RelHt",
-        "Ext": "Ext"
-    })[["Pitch", "Count", "Mix%", "Velo", "Spin", "IVB", "HB", "RelHt", "Ext"]]
-
-    # round numeric columns
-    for col in ["Velo", "IVB", "HB", "Mix%"]:
-        if col in df.columns:
-            df[col] = df[col].round(1)
-    if "Spin" in df.columns:
-        df["Spin"] = df["Spin"].round(0)
-    if "Mix%" in df.columns:
-        df["Mix%"] = df["Mix%"].astype(str) + "%"
-
-    table_plot = ax.table(
-        cellText=df.values,
-        colLabels=df.columns,
-        cellLoc="center",
-        loc="center",
-        bbox=[0, 0, 1, 1]
-    )
-
-    table_plot.auto_set_font_size(False)
-    table_plot.set_fontsize(fontsize)
-    table_plot.scale(1, 0.55)
-
-    for (row, col), cell in table_plot.get_celld().items():
-        if row == 0:
-            # header row
-            cell.set_facecolor("#FFFFFF")
-            cell.set_text_props(weight="bold", color="#000000")
-        else:
-            if col == 0:
-                pitch_name = cell.get_text().get_text()
-                color = PITCH_COLORS.get(pitch_name, "#999999")
-                cell.set_facecolor(color)
-                cell.set_text_props(weight="bold", color="#FFFFFF", fontsize=fontsize)
-            else:
-                cell.set_facecolor("#FFFFFF")
-                cell.set_text_props(color="#000000", fontsize=fontsize)
-
-    ax.axis("off")
-    return ax
-    
-# --- Summary table (single, robust block) ---
+# --- Pitch summary table ---
 if not df.is_empty():
     total_pitches = df.height
-
-    # choose best available release-height column
     rel_ht_col = (
         "z0" if "z0" in df.columns
         else ("releasePosZ" if "releasePosZ" in df.columns else None)
@@ -338,8 +224,8 @@ if not df.is_empty():
 
     if summary.height > 0:
         df_summary = summary.to_pandas()
+        df_summary["type__description"] = df_summary["type__description"].apply(normalize_pitch_name)
 
-        # round/format numeric columns that exist
         for col in ["Velo", "IVB", "HB"]:
             if col in df_summary.columns:
                 df_summary[col] = df_summary[col].round(1)
@@ -348,7 +234,6 @@ if not df.is_empty():
         if "Mix%" in df_summary.columns:
             df_summary["Mix%"] = df_summary["Mix%"].round(1)
 
-        # feet/inches helper
         def _ft_in(v):
             if pd.isna(v):
                 return "-"
@@ -361,6 +246,4 @@ if not df.is_empty():
                 df_summary[col] = df_summary[col].apply(_ft_in)
 
         st.markdown("### Pitch Summary by Type")
-        fig2, ax2 = plt.subplots(figsize=(6, 1.3))
-        pitch_table(df_summary, ax2, fontsize=7)
-        st.pyplot(fig2, clear_figure=True)
+        st.dataframe(df_summary, use_container_width=True)
