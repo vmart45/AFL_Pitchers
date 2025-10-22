@@ -1,3 +1,10 @@
+import subprocess, sys
+
+# Ensure critical packages are installed
+for pkg in ["polars", "streamlit", "matplotlib", "pandas", "numpy", "requests", "pyarrow"]:
+    subprocess.run([sys.executable, "-m", "pip", "install", pkg, "--upgrade"], check=False)
+
+
 import streamlit as st
 import datetime
 import polars as pl
