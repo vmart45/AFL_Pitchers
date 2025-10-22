@@ -270,10 +270,27 @@ def pitch_table(df, ax, fontsize: int = 8):
     ax.axis("off")
     return ax
 
-if not summary.is_empty():
-    df_summary = summary.to_pandas()
-    st.markdown("### Pitch Summary by Type")
-    fig2, ax2 = plt.subplots(figsize=(5.5, 1.6))
-    pitch_table(df_summary, ax2, fontsize=7)
-    st.pyplot(fig2, clear_figure=True)
+if not df.is_empty():
+    summary = (
+        df.group_by("type__description")
+        .agg([
+            pl.count().alias("Pitches"),
+            pl.col("startSpeed").mean().alias("Avg Velo"),
+            pl.col("breakVerticalInduced").mean().alias("Avg IVB"),
+            pl.col("breakHorizontal").mean().alias("Avg HB"),
+            pl.col("extension").mean().alias("Avg Extension"),
+            pl.col("spinRate").mean().alias("Avg Spin Rate"),
+        ])
+        .sort("Pitches", descending=True)
+    )
+
+    if not summary.is_empty():
+        df_summary = summary.to_pandas()
+        st.markdown("### Pitch Summary by Type")
+
+        fig2, ax2 = plt.subplots(figsize=(5.5, 1.6))
+        pitch_table(df_summary, ax2, fontsize=7)
+        st.pyplot(fig2, clear_figure=True)
+    else:
+        st.info("No pitch data available for this selection.")
 
