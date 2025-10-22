@@ -248,7 +248,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     formatted_date = format_date_pretty(selected_date)
     ax.set_title(
         f"Pitch Movement",
-        f"Pitch Movement — {selected_pitcher} ({formatted_date})",
         fontsize=8, fontweight="bold", pad=8
     )
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
