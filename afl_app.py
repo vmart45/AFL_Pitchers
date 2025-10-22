@@ -233,8 +233,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         loc="upper center",
         bbox_to_anchor=(0.5, -0.25),   # move below plot
         ncol=min(len(pitch_types_present), 4),  # spread across columns
-        bbox_to_anchor=(0.5, -0.25),
-        ncol=min(len(pitch_types_present), 4),
         fontsize=6,
         title=None,
         columnspacing=1.0,
