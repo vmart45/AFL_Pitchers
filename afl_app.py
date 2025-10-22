@@ -301,26 +301,53 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
+  if not df.is_empty():
+    total_pitches = df.height
+
+    # identify best-guess column names present in df
+    col_release_height = next((c for c in df.columns if "release" in c.lower() and "z" in c.lower()), None)
+    col_extension = next((c for c in df.columns if "extension" in c.lower()), None)
+    col_spin = next((c for c in df.columns if "spinrate" in c.lower()), None)
+
+    agg_exprs = [
+        pl.count().alias("Count"),
+        (pl.count() / total_pitches * 100).alias("Mix%"),
+        pl.col("startSpeed").mean().alias("Velo"),
+        pl.col("breakVerticalInduced").mean().alias("IVB"),
+        pl.col("breakHorizontal").mean().alias("HB"),
+    ]
+
+    if col_spin:
+        agg_exprs.append(pl.col(col_spin).mean().alias("Spin"))
+    if col_release_height:
+        agg_exprs.append(pl.col(col_release_height).mean().alias("RelHt"))
+    if col_extension:
+        agg_exprs.append(pl.col(col_extension).mean().alias("Ext"))
+
+    summary = (
+        df.group_by("type__description")
+        .agg(agg_exprs)
+        .sort("Count", descending=True)
+    )
+
     if not summary.is_empty():
         df_summary = summary.to_pandas()
 
-        # convert decimal height values to ft-in format
+        # ft/in conversions
+        def format_feet_inches(decimal_value):
+            if pd.isna(decimal_value):
+                return "-"
+            feet = int(decimal_value)
+            inches = round((decimal_value - feet) * 12)
+            return f"{feet}′{inches}″"
+
         if "RelHt" in df_summary.columns:
             df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
         if "Ext" in df_summary.columns:
             df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
 
         st.markdown("### Pitch Summary by Type")
-        fig2, ax2 = plt.subplots(figsize=(6, 1.6))
+        fig2, ax2 = plt.subplots(figsize=(6, 1.5))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
-
-    if not summary.is_empty():
-        df_summary = summary.to_pandas()
-
-        fig2, ax2 = plt.subplots(figsize=(5.5, 1.6))
-        pitch_table(df_summary, ax2, fontsize=7)
-        st.pyplot(fig2, clear_figure=True)
-    else:
-        st.info("No pitch data available for this selection.")
 
