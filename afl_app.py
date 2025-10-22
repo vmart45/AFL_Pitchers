@@ -347,7 +347,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
 
     plt.tight_layout(pad=1)
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 2.2, 1])
     with col2:
         st.pyplot(fig, clear_figure=True, use_container_width=False)
 
@@ -465,8 +465,15 @@ if summary.height > 0:
             df_summary[col] = df_summary[col].apply(lambda v: f"{int(v)}′{round((v-int(v))*12)}″" if pd.notna(v) else "-")
 
     # Larger table scaling
-    fig2, ax2 = plt.subplots(figsize=(7.5, 1.8))  # wider table
+    fig2, ax2 = plt.subplots(figsize=(8.5, 1.9))  # wider table
     pitch_table(df_summary, ax2, fontsize=8)
+
+    table = ax2.tables[0] if hasattr(ax2, "tables") and ax2.tables else None
+    if table:
+        for key, cell in table.get_celld().items():
+            if key[0] == 0:
+                cell.set_height(0.13)  # tighten header
+            cell.set_width(0.11)
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
