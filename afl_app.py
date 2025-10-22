@@ -248,7 +248,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         gb.configure_column("Spin", valueFormatter="x.toFixed(0)")
         gb.configure_column("Induced Vert. Break", valueFormatter="x.toFixed(1)")
         gb.configure_column("Horz. Break", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Avg Extension", valueFormatter="x.toFixed(1)")
+        gb.configure_column("Extension", valueFormatter="x.toFixed(1)")
         grid_options = gb.build()
 
         AgGrid(
