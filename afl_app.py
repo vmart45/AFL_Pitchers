@@ -223,7 +223,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     st.pyplot(fig, clear_figure=True)
 
 def pitch_table(df, ax, fontsize: int = 8):
-    # simplify column names for readability
+    # simplify column names
     df = df.rename(columns={
         "type__description": "Pitch",
         "Pitches": "Count",
@@ -241,6 +241,7 @@ def pitch_table(df, ax, fontsize: int = 8):
     if "Spin" in df.columns:
         df["Spin"] = df["Spin"].round(0)
 
+    # build table
     table_plot = ax.table(
         cellText=df.values,
         colLabels=df.columns,
@@ -251,24 +252,29 @@ def pitch_table(df, ax, fontsize: int = 8):
 
     table_plot.auto_set_font_size(False)
     table_plot.set_fontsize(fontsize)
-    table_plot.scale(1, 0.5)  # tighter height scaling
+    table_plot.scale(1, 0.55)
 
-    # header styling
+    # styling
     for (row, col), cell in table_plot.get_celld().items():
         if row == 0:
-            cell.set_text_props(weight="bold", color="white")
-            cell.set_facecolor("#222222")
+            # header row: white background, black text
+            cell.set_facecolor("#FFFFFF")
+            cell.set_text_props(weight="bold", color="#000000")
         else:
-            if col == 0:  # Pitch name column
+            if col == 0:
+                # pitch name cell: color-coded background, white text
                 pitch_name = cell.get_text().get_text()
-                color = PITCH_COLORS.get(pitch_name, "#FFFFFF")
+                color = PITCH_COLORS.get(pitch_name, "#999999")
                 cell.set_facecolor(color)
-                cell.set_text_props(weight="bold", color="white", fontsize=fontsize)
+                cell.set_text_props(weight="bold", color="#FFFFFF", fontsize=fontsize)
             else:
-                cell.set_facecolor("#000000")
+                # regular data cell: white background, black text
+                cell.set_facecolor("#FFFFFF")
+                cell.set_text_props(color="#000000", fontsize=fontsize)
 
     ax.axis("off")
     return ax
+
 
 if not df.is_empty():
     summary = (
