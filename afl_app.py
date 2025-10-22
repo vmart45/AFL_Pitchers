@@ -382,4 +382,3 @@ if not df.is_empty():
         fig2, ax2 = plt.subplots(figsize=(6, 1.3))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
-        st.dataframe(df_summary, use_container_width=True)
