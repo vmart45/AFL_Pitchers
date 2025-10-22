@@ -447,32 +447,27 @@ if not df.is_empty():
           .sort("Count", descending=True)
     )
 
-    if summary.height > 0:
-        df_summary = summary.to_pandas()
-        df_summary["type__description"] = df_summary["type__description"].apply(normalize_pitch_name)
+  if summary.height > 0:
+    df_summary = summary.to_pandas()
+    df_summary["type__description"] = df_summary["type__description"].apply(normalize_pitch_name)
 
-        # round/format numeric columns that exist
-        for col in ["Velo", "IVB", "HB"]:
-            if col in df_summary.columns:
-                df_summary[col] = df_summary[col].round(1)
-        if "Spin" in df_summary.columns:
-            df_summary["Spin"] = df_summary["Spin"].round(0)
-        if "Mix%" in df_summary.columns:
-            df_summary["Mix%"] = df_summary["Mix%"].round(1)
+    # Round and format
+    for col in ["Velo", "IVB", "HB"]:
+        if col in df_summary.columns:
+            df_summary[col] = df_summary[col].round(1)
+    if "Spin" in df_summary.columns:
+        df_summary["Spin"] = df_summary["Spin"].round(0)
+    if "Mix%" in df_summary.columns:
+        df_summary["Mix%"] = df_summary["Mix%"].round(1)
 
-        # feet/inches helper
-        def _ft_in(v):
-            if pd.isna(v):
-                return "-"
-            feet = int(v)
-            inches = round((v - feet) * 12)
-            return f"{feet}′{inches}″"
+    for col in ["RelHt", "Ext"]:
+        if col in df_summary.columns:
+            df_summary[col] = df_summary[col].apply(lambda v: f"{int(v)}′{round((v-int(v))*12)}″" if pd.notna(v) else "-")
 
-        for col in ["RelHt", "Ext"]:
-            if col in df_summary.columns:
-                df_summary[col] = df_summary[col].apply(_ft_in)
+    # Larger table scaling
+    fig2, ax2 = plt.subplots(figsize=(7.5, 1.8))  # wider table
+    pitch_table(df_summary, ax2, fontsize=8)
 
-        fig2, ax2 = plt.subplots(figsize=(6, 1.3))
-        pitch_table(df_summary, ax2, fontsize=5)
-        with col2:
-            st.pyplot(fig2, clear_figure=True, use_container_width = False)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.pyplot(fig2, clear_figure=True, use_container_width = False)
