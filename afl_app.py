@@ -222,18 +222,28 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
 
     st.pyplot(fig, clear_figure=True)
 
-def pitch_table(df: pd.DataFrame, ax: plt.Axes, fontsize: int = 12):
-    df["Avg Velo"] = df["Velo"].round(1)
-    df["Avg IVB"] = df["IVB"].round(1)
-    df["Avg HB"] = df["HB"].round(1)
-    df["Avg Extension"] = df["Extension"].round(1)
-    df["Avg Spin Rate"] = df["Spin"].round(0)
-    df_plot = df.astype(str)
+def pitch_table(df, ax, fontsize: int = 8):
+    # simplify column names for readability
+    df = df.rename(columns={
+        "type__description": "Pitch",
+        "Pitches": "Count",
+        "Avg Velo": "Velo",
+        "Avg IVB": "IVB",
+        "Avg HB": "HB",
+        "Avg Extension": "Ext",
+        "Avg Spin Rate": "Spin"
+    })
 
-    table_columns = df_plot.columns.tolist()
+    # round numeric columns
+    for col in ["Velo", "IVB", "HB", "Ext"]:
+        if col in df.columns:
+            df[col] = df[col].round(1)
+    if "Spin" in df.columns:
+        df["Spin"] = df["Spin"].round(0)
+
     table_plot = ax.table(
-        cellText=df_plot.values,
-        colLabels=table_columns,
+        cellText=df.values,
+        colLabels=df.columns,
         cellLoc="center",
         loc="center",
         bbox=[0, 0, 1, 1]
@@ -241,43 +251,29 @@ def pitch_table(df: pd.DataFrame, ax: plt.Axes, fontsize: int = 12):
 
     table_plot.auto_set_font_size(False)
     table_plot.set_fontsize(fontsize)
-    table_plot.scale(1, 1.2)
+    table_plot.scale(1, 0.5)  # tighter height scaling
 
+    # header styling
     for (row, col), cell in table_plot.get_celld().items():
         if row == 0:
             cell.set_text_props(weight="bold", color="white")
-            cell.set_facecolor("#1E1E1E")
+            cell.set_facecolor("#222222")
         else:
-            if col == 0:
+            if col == 0:  # Pitch name column
                 pitch_name = cell.get_text().get_text()
                 color = PITCH_COLORS.get(pitch_name, "#FFFFFF")
                 cell.set_facecolor(color)
-                cell.set_text_props(weight="bold", color="black")
+                cell.set_text_props(weight="bold", color="black", fontsize=fontsize)
             else:
-                cell.set_facecolor("#F7F7F7")
+                cell.set_facecolor("#FAFAFA")
 
     ax.axis("off")
     return ax
 
-
-# ---- summary table section ----
-summary = (
-    df.group_by("type__description")
-    .agg([
-        pl.count().alias("Pitches"),
-        pl.col("startSpeed").mean().round(1).alias("Velo"),
-        pl.col("breakVerticalInduced").mean().round(1).alias("IVB"),
-        pl.col("breakHorizontal").mean().round(1).alias("HB"),
-        pl.col("extension").mean().round(1).alias("Extension"),
-        pl.col("spinRate").mean().round(0).alias("Spin"),
-    ])
-    .rename({"type__description": "Pitch Type"})
-    .sort("Pitches", descending=True)
-)
-
 if not summary.is_empty():
     df_summary = summary.to_pandas()
     st.markdown("### Pitch Summary by Type")
-    fig2, ax2 = plt.subplots(figsize=(6, 1.8))
-    pitch_table(df_summary, ax2)
+    fig2, ax2 = plt.subplots(figsize=(5.5, 1.6))
+    pitch_table(df_summary, ax2, fontsize=7)
     st.pyplot(fig2, clear_figure=True)
+
