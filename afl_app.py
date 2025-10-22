@@ -220,13 +220,19 @@ def get_pitcher_bio(pitcher_id: int):
 
 
 def infer_pitcher_team(df):
-    """Infer pitcher's team based on home/away and is_top_inning logic."""
+    """Infer pitcher's team using home/away + is_top_inning (TRUE/FALSE)."""
     if {"home_team", "away_team", "is_top_inning"} <= set(df.columns):
-        row = df[0]  # first pitch for context
+        row = df[0]
         is_top = row["is_top_inning"]
-        if is_top is True:
+
+        if isinstance(is_top, str):
+            is_top = is_top.strip().upper() == "TRUE"
+
+        if is_top:
+            # Top of inning => AWAY team is hitting, so PITCHER is HOME team
             return row["home_team"]
-        elif is_top is False:
+        else:
+            # Bottom of inning => HOME team is hitting, so PITCHER is AWAY team
             return row["away_team"]
     return "Unknown"
 
