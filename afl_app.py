@@ -221,44 +221,62 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
 
     st.pyplot(fig, clear_figure=True)
 
-    # ---- summary table ----
-    summary = (
-        df.group_by("type__description")
-        .agg([
-            pl.count().alias("Pitches"),
-            pl.col("startSpeed").mean().round(1).alias("Velo"),
-            pl.col("spinRate").mean().round(0).alias("Spin"),          
-            pl.col("breakVerticalInduced").mean().round(1).alias("Induced Vert. Break"),
-            pl.col("breakHorizontal").mean().round(1).alias("Horz. Break"),
-            pl.col("extension").mean().round(1).alias("Extension"),
-        ])
-        .rename({"type__description": "Pitch Type"})
-        .sort("Pitches", descending=True)
+def pitch_table(df: pd.DataFrame, ax: plt.Axes, fontsize: int = 12):
+    df["Avg Velo"] = df["Avg Velo"].round(1)
+    df["Avg IVB"] = df["Avg IVB"].round(1)
+    df["Avg HB"] = df["Avg HB"].round(1)
+    df["Avg Extension"] = df["Avg Extension"].round(1)
+    df["Avg Spin Rate"] = df["Avg Spin Rate"].round(0)
+    df_plot = df.astype(str)
+
+    table_columns = df_plot.columns.tolist()
+    table_plot = ax.table(
+        cellText=df_plot.values,
+        colLabels=table_columns,
+        cellLoc="center",
+        loc="center",
+        bbox=[0, 0, 1, 1]
     )
 
-    if not summary.is_empty():
-        df_summary = summary.to_pandas()
-        st.markdown("### Pitch Summary by Type")
+    table_plot.auto_set_font_size(False)
+    table_plot.set_fontsize(fontsize)
+    table_plot.scale(1, 1.2)
 
-        gb = GridOptionsBuilder.from_dataframe(df_summary)
-        gb.configure_default_column(resizable=True, sortable=True, filter=True)
-        gb.configure_grid_options(domLayout='autoHeight')
-        gb.configure_column("Pitch Type", cellStyle={"fontWeight": "bold"})
-        gb.configure_column("Velo", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Spin", valueFormatter="x.toFixed(0)")
-        gb.configure_column("Induced Vert. Break", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Horz. Break", valueFormatter="x.toFixed(1)")
-        gb.configure_column("Extension", valueFormatter="x.toFixed(1)")
-        grid_options = gb.build()
+    for (row, col), cell in table_plot.get_celld().items():
+        if row == 0:
+            cell.set_text_props(weight="bold", color="white")
+            cell.set_facecolor("#1E1E1E")
+        else:
+            if col == 0:
+                pitch_name = cell.get_text().get_text()
+                color = PITCH_COLORS.get(pitch_name, "#FFFFFF")
+                cell.set_facecolor(color)
+                cell.set_text_props(weight="bold", color="black")
+            else:
+                cell.set_facecolor("#F7F7F7")
 
-        AgGrid(
-            df_summary,
-            gridOptions=grid_options,
-            height=220,
-            fit_columns_on_grid_load=True,
-            theme="material",
-        )
-    else:
-        st.info("No pitch data available for this selection.")
-else:
-    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
+    ax.axis("off")
+    return ax
+
+
+# ---- summary table section ----
+summary = (
+    df.group_by("type__description")
+    .agg([
+        pl.count().alias("Pitches"),
+        pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
+        pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
+        pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
+        pl.col("extension").mean().round(1).alias("Avg Extension"),
+        pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
+    ])
+    .rename({"type__description": "Pitch Type"})
+    .sort("Pitches", descending=True)
+)
+
+if not summary.is_empty():
+    df_summary = summary.to_pandas()
+    st.markdown("### Pitch Summary by Type")
+    fig2, ax2 = plt.subplots(figsize=(9, 2.5))
+    pitch_table(df_summary, ax2)
+    st.pyplot(fig2, clear_figure=True)
