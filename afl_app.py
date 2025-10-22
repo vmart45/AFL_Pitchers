@@ -243,8 +243,6 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         handletextpad=0.4,
 )
 
-# make legend background white, light border
-    )
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("lightgray")
     legend.get_frame().set_linewidth(0.5)
