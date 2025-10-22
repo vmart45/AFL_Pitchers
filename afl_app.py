@@ -222,33 +222,35 @@ def get_pitcher_bio(pitcher_id: int):
 def infer_pitcher_team(df):
     """Infer pitcher's team using home/away + is_top_inning (TRUE/FALSE)."""
     if {"home_team", "away_team", "is_top_inning"} <= set(df.columns):
-        # safely extract single values from Polars columns
+        # Get first row for context
         row = df[0]
-        home = row["home_team"]
-        away = row["away_team"]
 
-        # make sure to extract scalar for is_top_inning
-        is_top = row["is_top_inning"]
-        if isinstance(is_top, pl.Series):
-            is_top = is_top.item()
-        elif isinstance(is_top, list):
-            is_top = is_top[0]
+        def _unwrap(val):
+            """Safely unwrap Series/list/scalar."""
+            if isinstance(val, pl.Series):
+                return val.item()
+            elif isinstance(val, list):
+                return val[0] if val else None
+            return val
 
-        # normalize type (handle strings or bool)
+        home = _unwrap(row["home_team"])
+        away = _unwrap(row["away_team"])
+        is_top = _unwrap(row["is_top_inning"])
+
+        # Normalize boolean/string mix
         if isinstance(is_top, str):
             is_top = is_top.strip().upper() == "TRUE"
 
-        # inning logic
+        # Apply inning logic
         if is_top is True:
-            # Top inning: away team hitting → pitcher = home team
+            # Top inning: away hitting → pitcher = home
             return home
         elif is_top is False:
-            # Bottom inning: home team hitting → pitcher = away team
+            # Bottom inning: home hitting → pitcher = away
             return away
+
     return "Unknown"
-
-
-
+    
 # --- Pitcher Bio Section ---
 if not df.is_empty():
     pitcher_id = None
