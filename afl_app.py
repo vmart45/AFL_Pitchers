@@ -265,7 +265,7 @@ with col2:
             formatted_date = format_date_pretty(selected_date)
             st.markdown(
                 f"<h3 style='text-align:center; margin-bottom:0px; font-weight:700;'>{bio['Name']} — {formatted_date}</h3>"
-                f"<h5 style='text-align:center; color:#555; margin-top:2px; font-weight:600;'>{team_name}</h5>",
+                f"<h5 style='text-align:center; color:#555; margin-top:1px; font-weight:600;'>{team_name}</h5>",
                 unsafe_allow_html=True
             )
 
