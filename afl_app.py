@@ -340,7 +340,7 @@ if not df.is_empty():
         .sort("Count", descending=True)
     )
 
- if not df.is_empty():
+if not df.is_empty():
     total_pitches = df.height
 
     summary = (
@@ -368,7 +368,6 @@ if not df.is_empty():
             inches = round((decimal_value - feet) * 12)
             return f"{feet}′{inches}″"
 
-        # convert height-based columns to ft/in
         df_summary["RelHt"] = df_summary["RelHt"].apply(format_feet_inches)
         df_summary["Ext"] = df_summary["Ext"].apply(format_feet_inches)
 
