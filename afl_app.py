@@ -269,14 +269,14 @@ with col2:
             f"<h5 style='text-align:center; color:#555; margin-top:0px; font-weight:600;'>({team_name})</h5>",
             unsafe_allow_html=True
     )
-    st.markdown(
-        f"<p style='text-align:center; font-size:15px;'>"
-        f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
-        f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
-        f"| <b>Born:</b> {bio['Birth City']}, {bio['Birth State']}, {bio['Birth Country']} — "
-        f"{bio['Birth Date']} ({bio['Age']} yrs old)"
-        f"</p>",
-        unsafe_allow_html=True
+        st.markdown(
+            f"<p style='text-align:center; font-size:15px;'>"
+            f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
+            f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
+            f"| <b>Born:</b> {bio['Birth City']}, {bio['Birth State']}, {bio['Birth Country']} — "
+            f"{bio['Birth Date']} ({bio['Age']} yrs old)"
+            f"</p>",
+            unsafe_allow_html=True
     )
 
 
