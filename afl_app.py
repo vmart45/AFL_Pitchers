@@ -220,3 +220,20 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     st.pyplot(fig, clear_figure=True)
 else:
     st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
+
+summary = (
+        df.group_by("type__description")
+        .agg([
+            pl.count().alias("Pitches"),
+            pl.col("startSpeed").mean().alias("Avg Velo"),
+            pl.col("breakVerticalInduced").mean().alias("Avg IVB"),
+            pl.col("breakHorizontal").mean().alias("Avg HB"),
+            pl.col("extension").mean().alias("Avg Extension"),
+        ])
+        .sort("Pitches", descending=True)
+    )
+
+    st.markdown("### Pitch Summary by Type")
+    st.dataframe(summary.to_pandas(), use_container_width=True)
+else:
+    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
