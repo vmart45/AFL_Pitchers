@@ -378,7 +378,6 @@ if not df.is_empty():
             if col in df_summary.columns:
                 df_summary[col] = df_summary[col].apply(_ft_in)
 
-        st.markdown("### Pitch Summary by Type")
         fig2, ax2 = plt.subplots(figsize=(6, 1.3))
         pitch_table(df_summary, ax2, fontsize=7)
         st.pyplot(fig2, clear_figure=True)
