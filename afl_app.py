@@ -183,9 +183,7 @@ if "type__description" in df.columns:
 else:
     st.warning("Pitch type column not found.")
     st.stop()
-
-import requests
-
+    
 def get_pitcher_bio(pitcher_id: int):
     """Fetch basic bio info from MLB Stats API."""
     try:
@@ -204,7 +202,6 @@ def get_pitcher_bio(pitcher_id: int):
             throws = data.get("pitchHand", {}).get("description", "-")
             bats = data.get("batSide", {}).get("description", "-")
 
-            # Format birthplace cleanly
             birthplace = ", ".join([x for x in [city, state, country] if x])
 
             return {
@@ -222,39 +219,38 @@ def get_pitcher_bio(pitcher_id: int):
     return None
 
 
-# --- Pitcher Bio ---
+def infer_pitcher_team(df):
+    """Infer pitcher's team based on home/away and is_top_inning logic."""
+    if {"home_team", "away_team", "is_top_inning"} <= set(df.columns):
+        row = df[0]  # first pitch for context
+        is_top = row["is_top_inning"]
+        if is_top is True:
+            return row["home_team"]
+        elif is_top is False:
+            return row["away_team"]
+    return "Unknown"
+
+
+# --- Pitcher Bio Section ---
 if not df.is_empty():
     pitcher_id = None
     if "pitcher_id" in df.columns:
-        pitcher_id = df["pitcher_id"][0]
-    elif "player_id" in df.columns:
-        pitcher_id = df["player_id"][0]
+        pitcher_id = int(df["pitcher_id"][0])
 
-    if pitcher_id:
-        bio = get_pitcher_bio(int(pitcher_id))
-        if bio:
-            st.markdown(f"### {bio['Name']}")
-            st.markdown(
-                f"**Throws/Bats:** {bio['Throws']} / {bio['Bats']}  |  "
-                f"**Height/Weight:** {bio['Height']}, {bio['Weight']}  |  "
-                f"**Born:** {bio['Birthplace']} — {bio['Birth Date']} "
-                f"({bio['Age']} yrs old)"
-            )
-        else:
-            st.info("⚾ Pitcher bio unavailable (not found in MLB Stats API).")
+    team_name = infer_pitcher_team(df)
+    bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
 
-
-# --- Pitcher Bio ---
-if "pitcher_id" in df.columns and not df.is_empty():
-    pitcher_id = df["pitcher_id"][0]
-    bio = get_pitcher_bio(pitcher_id)
     if bio:
-        st.markdown(f"### {bio['Name']}")
+        st.markdown(f"### {bio['Name']} ({team_name})")
         st.markdown(
-            f"**Team:** {bio['Team']}  |  **Throws:** {bio['Throws']}  |  "
-            f"**Position:** {bio['Position']}  |  **Height:** {bio['Height']}  |  "
-            f"**Weight:** {bio['Weight']}  |  **Born:** {bio['Birth Date']}"
+            f"**Throws/Bats:** {bio['Throws']} / {bio['Bats']}  |  "
+            f"**Height/Weight:** {bio['Height']}, {bio['Weight']}  |  "
+            f"**Born:** {bio['Birthplace']} — {bio['Birth Date']} "
+            f"({bio['Age']} yrs old)"
         )
+    else:
+        st.info(f"⚾ Bio unavailable — {team_name}")
+
 
 
 # --- Pitch movement plot ---
