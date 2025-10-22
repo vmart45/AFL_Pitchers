@@ -221,7 +221,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
 else:
     st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
 
-summary = (
+    summary = (
         df.group_by("type__description")
         .agg([
             pl.count().alias("Pitches"),
@@ -235,5 +235,4 @@ summary = (
 
     st.markdown("### Pitch Summary by Type")
     st.dataframe(summary.to_pandas(), use_container_width=True)
-else:
-    st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
+
