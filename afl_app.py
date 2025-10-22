@@ -172,10 +172,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(4, 3.5))
 
-    for group_tuple in df.group_by("type__description"):
-        pitch_type = group_tuple[0][0] if isinstance(group_tuple[0], tuple) else group_tuple[0]
-        group = group_tuple[1]
-
+    for pitch_type, group in df.group_by("type__description"):
         color = PITCH_COLORS.get(pitch_type, "gray")
         ax.scatter(
             group["breakHorizontal"],
@@ -198,7 +195,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         frameon=False,
         bbox_to_anchor=(1.02, 0.5),
         loc="center left",
-        fontsize=5,
+        fontsize=6,
         title="Pitch Type",
         title_fontsize=6
     )
@@ -213,6 +210,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.set_xlabel("Horizontal Break (in.)", fontsize=7, labelpad=6)
     ax.set_ylabel("Induced Vertical Break (in.)", fontsize=7, labelpad=6)
     ax.grid(True, linestyle="--", alpha=0.3)
+    ax.tick_params(left=False, labelleft=False, bottom=True, labelbottom=True)
 
     st.pyplot(fig, clear_figure=True)
 
@@ -221,18 +219,21 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
             df.group_by("type__description")
             .agg([
                 pl.count().alias("Pitches"),
-                pl.col("startSpeed").mean().alias("Avg Velo"),
-                pl.col("breakVerticalInduced").mean().alias("Avg IVB"),
-                pl.col("breakHorizontal").mean().alias("Avg HB"),
-                pl.col("extension").mean().alias("Avg Extension"),
+                pl.col("startSpeed").mean().round(1).alias("Avg Velo"),
+                pl.col("breakVerticalInduced").mean().round(1).alias("Avg IVB"),
+                pl.col("breakHorizontal").mean().round(1).alias("Avg HB"),
+                pl.col("extension").mean().round(1).alias("Avg Extension"),
+                pl.col("spinRate").mean().round(0).alias("Avg Spin Rate"),
             ])
             .sort("Pitches", descending=True)
         )
 
         if not summary.is_empty():
+            summary = summary.rename({"type__description": "Pitch Type"})
             st.markdown("### Pitch Summary by Type")
             st.dataframe(summary.to_pandas(), use_container_width=True)
         else:
             st.info("No pitch data available for this selection.")
 else:
     st.warning("Missing breakHorizontal or breakVerticalInduced columns for plotting.")
+
