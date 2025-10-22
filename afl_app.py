@@ -7,6 +7,9 @@ import polars as pl
 import streamlit as st
 import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder
+from PIL import Image
+from io import BytesIO
+
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
 st.title("AFL Pitcher Dashboard")
@@ -23,6 +26,21 @@ def seconds_until_next_8am_pt(now_utc: dt.datetime | None = None) -> int:
     if now_pt >= target:
         target = target + dt.timedelta(days=1)
     return int((target - now_pt).total_seconds())
+
+def get_player_headshot(pitcher_id: str):
+    """Fetch MLB headshot image and return PIL Image."""
+    try:
+        url = (
+            f"https://img.mlbstatic.com/mlb-photos/image/"
+            f"upload/d_people:generic:headshot:67:current.png/"
+            f"w_640,q_auto:best/v1/people/{pitcher_id}/headshot/silo/current.png"
+        )
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+    except Exception:
+        pass
+    return None
 
 @st.cache_data(ttl=seconds_until_next_8am_pt())
 def fetch_afl_data_all_days(start: dt.date, end: dt.date) -> pl.DataFrame:
@@ -251,7 +269,8 @@ def infer_pitcher_team(df):
 
     return "Unknown"
     
-col1, col2, col3 = st.columns([1, 2, 1])
+# --- Pitcher Bio Section ---
+col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     if not df.is_empty():
         pitcher_id = None
@@ -260,26 +279,36 @@ with col2:
 
         team_name = infer_pitcher_team(df)
         bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
+        headshot = get_player_headshot(pitcher_id) if pitcher_id else None
 
         if bio:
             formatted_date = format_date_pretty(selected_date)
-            st.markdown(
-                f"<h3 style='text-align:center; margin-bottom:0px; font-weight:700;'>{bio['Name']} — {formatted_date}</h3>"
-                f"<h5 style='text-align:center; color:#555; margin-top:1px; font-weight:600;'>{team_name}</h5>",
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                f"<p style='text-align:center; font-size:15px;'>"
-                f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
-                f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
-                f"| <b>Born:</b> {bio.get('Birthplace', '-')} — {bio.get('Birth Date', '-')} "
-                f"({bio.get('Age', '?')} yrs old)"
-                f"</p>",
-                unsafe_allow_html=True
-            )
-
-
+            
+            inner_col1, inner_col2 = st.columns([1, 3.5])
+            
+            # left column: headshot image
+            with inner_col1:
+                if headshot:
+                    st.image(headshot, width=85)
+            
+            # right column: name and bio
+            with inner_col2:
+                st.markdown(
+                    f"<h3 style='text-align:left; margin-bottom:0px; font-weight:700;'>"
+                    f"{bio['Name']} — {formatted_date}</h3>"
+                    f"<h5 style='text-align:left; color:#555; margin-top:2px; font-weight:600;'>"
+                    f"{team_name}</h5>",
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    f"<p style='font-size:14px; margin-top:4px;'>"
+                    f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
+                    f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
+                    f"| <b>Born:</b> {bio['Birthplace']} — {bio['Birth Date']} "
+                    f"({bio['Age']} yrs old)"
+                    f"</p>",
+                    unsafe_allow_html=True
+                )
 
 # --- Pitch movement plot ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
