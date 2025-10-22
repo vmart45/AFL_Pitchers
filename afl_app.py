@@ -268,47 +268,53 @@ def infer_pitcher_team(df):
             return away
 
     return "Unknown"
-    
-# --- Pitcher Bio Section ---
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
+
+col1, col2, col3 = st.columns([1, 3, 1])
+with col1:
     if not df.is_empty():
         pitcher_id = None
         if "pitcher_id" in df.columns:
             pitcher_id = int(df["pitcher_id"][0])
 
+        # show headshot on far left
+        headshot = get_player_headshot(pitcher_id) if pitcher_id else None
+        if headshot:
+            st.image(headshot, width=120)
+        else:
+            st.image(
+                "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/"
+                "w_640,q_auto:best/v1/people/generic/headshot/silo/current.png",
+                width=120,
+            )
+
+with col2:
+    if not df.is_empty():
         team_name = infer_pitcher_team(df)
         bio = get_pitcher_bio(pitcher_id) if pitcher_id else None
-        headshot = get_player_headshot(pitcher_id) if pitcher_id else None
 
         if bio:
             formatted_date = format_date_pretty(selected_date)
-            
-            inner_col1, inner_col2 = st.columns([1, 3.5])
-            
-            # left column: headshot image
-            with inner_col1:
-                if headshot:
-                    st.image(headshot, width=85)
-            
-            # right column: name and bio
-            with inner_col2:
-                st.markdown(
-                    f"<h3 style='text-align:left; margin-bottom:0px; font-weight:700;'>"
-                    f"{bio['Name']} — {formatted_date}</h3>"
-                    f"<h5 style='text-align:left; color:#555; margin-top:2px; font-weight:600;'>"
-                    f"{team_name}</h5>",
-                    unsafe_allow_html=True
-                )
-                st.markdown(
-                    f"<p style='font-size:14px; margin-top:4px;'>"
-                    f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
-                    f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
-                    f"| <b>Born:</b> {bio['Birthplace']} — {bio['Birth Date']} "
-                    f"({bio['Age']} yrs old)"
-                    f"</p>",
-                    unsafe_allow_html=True
-                )
+
+            st.markdown(
+                f"<h3 style='text-align:center; margin-bottom:0px; font-weight:700;'>"
+                f"{bio['Name']} — {formatted_date}</h3>",
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f"<h5 style='text-align:center; color:#555; margin-top:2px; font-weight:600;'>"
+                f"{team_name}</h5>",
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f"<p style='text-align:center; font-size:14px; margin-top:4px;'>"
+                f"<b>Throws/Bats:</b> {bio['Throws']} / {bio.get('Bats', '-')} "
+                f"| <b>Height/Weight:</b> {bio['Height']}, {bio['Weight']} "
+                f"| <b>Born:</b> {bio['Birthplace']} — {bio['Birth Date']} "
+                f"({bio['Age']} yrs old)"
+                f"</p>",
+                unsafe_allow_html=True
+            )
+
 
 # --- Pitch movement plot ---
 if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
