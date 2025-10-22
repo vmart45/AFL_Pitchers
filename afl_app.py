@@ -9,7 +9,7 @@ from StatcastMain import get_afl_data  # your existing scraper
 # Streamlit page setup
 # -------------------------------------------------------------------
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
-st.title("🎯 Arizona Fall League Pitch Movement")
+st.title("Arizona Fall League Pitcher Dashboard")
 
 CACHE_FILE = "afl_cache.parquet"
 AFL_TEAMS = [
