@@ -213,7 +213,7 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
         ax.scatter(
             g["breakHorizontal"],
             g["breakVerticalInduced"],
-            label=pt,
+            label=pt_norm,
             color=color,
             alpha=0.8,
             s=15,
