@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder
 from PIL import Image
 from io import BytesIO
-from typing import Optional
+from typing import Optional, List
 
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
 st.title("AFL Pitcher Dashboard")
