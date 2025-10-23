@@ -55,6 +55,11 @@ def get_afl_data(date_str: Optional[str] = None) -> pl.DataFrame:
         df = df.sort(sort_cols)
     return df
 
+def get_afl_games(date_str: str) -> List[int]:
+    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId={SPORT_ID}&date={date_str}"
+    j = requests.get(url, timeout=30).json()
+    return [g["gamePk"] for d in j.get("dates", []) for g in d.get("games", [])]
+
 def get_player_headshot(pitcher_id: str):
     """Fetch MLB headshot image and return PIL Image."""
     try:
