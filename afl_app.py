@@ -71,21 +71,24 @@ def load_or_fetch_data() -> pl.DataFrame:
     # Define the daily 8am cutoff
     cutoff = now_pt.replace(hour=8, minute=0, second=0, microsecond=0)
     if now_pt < cutoff:
-        # Before 8am PT — still consider yesterday’s cache “fresh”
         cutoff = cutoff - dt.timedelta(days=1)
 
-    # If cache exists, check modified time
     if os.path.exists(CACHE_FILE):
         mtime = dt.datetime.fromtimestamp(os.path.getmtime(CACHE_FILE), PT)
-        if mtime >= cutoff:
+        age_hours = (now_pt - mtime).total_seconds() / 3600
+        if mtime >= cutoff and age_hours < 12:
             return pl.read_parquet(CACHE_FILE)
+
 
     # Otherwise fetch new data
     season_start = dt.date(2025, 10, 1)
     today = dt.date.today()
+    yesterday = today - dt.timedelta(days=1)
 
     st.info(f"Refreshing data (last cache before {cutoff.strftime('%b %d %H:%M PT')})...")
     df = fetch_afl_data_all_days(season_start, today)
+    if df.is_empty():
+        df = fetch_afl_data_all_days(season_start, yesterday)
     if not df.is_empty():
         df.write_parquet(CACHE_FILE)
     return df
