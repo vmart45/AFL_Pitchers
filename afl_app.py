@@ -42,7 +42,7 @@ def get_player_headshot(pitcher_id: str):
         pass
     return None
 
-@st.cache_data(ttl=seconds_until_next_8am_pt())
+@st.cache_data(ttl=86400)
 def fetch_afl_data_all_days(start: dt.date, end: dt.date) -> pl.DataFrame:
     dfs = []
     all_cols = set()
