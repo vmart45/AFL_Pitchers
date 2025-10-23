@@ -10,10 +10,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from PIL import Image
 from io import BytesIO
 
-
 st.set_page_config(page_title="AFL Pitch Movement Dashboard", layout="wide")
 st.title("AFL Pitcher Dashboard")
-
 
 CACHE_FILE = "afl_cache.parquet"
 
@@ -26,6 +24,35 @@ def seconds_until_next_8am_pt(now_utc: dt.datetime | None = None) -> int:
     if now_pt >= target:
         target = target + dt.timedelta(days=1)
     return int((target - now_pt).total_seconds())
+
+
+def get_afl_data(date_str: Optional[str] = None) -> pl.DataFrame:
+    if date_str is None:
+        date_str = datetime.date.today().strftime("%Y-%m-%d")
+
+    game_pks = get_afl_games(date_str)
+    if not game_pks:
+        print(f"No AFL games for {date_str}.")
+        return pl.DataFrame()
+
+    print(f"Found {len(game_pks)} AFL games for {date_str}: {game_pks}")
+    all_rows: List[Dict[str, Any]] = []
+    for pk in game_pks:
+        rows = rows_from_game(pk)
+        if rows:
+            all_rows.extend(rows)
+        else:
+            print(f"⚠️ No pitches for game {pk}")
+
+    if not all_rows:
+        print("⚠️ No valid pitch data.")
+        return pl.DataFrame()
+
+    df = pl.DataFrame(all_rows)
+    sort_cols = [c for c in ["game_date", "game_id", "at_bat_index", "event_idx"] if c in df.columns]
+    if sort_cols:
+        df = df.sort(sort_cols)
+    return df
 
 def get_player_headshot(pitcher_id: str):
     """Fetch MLB headshot image and return PIL Image."""
