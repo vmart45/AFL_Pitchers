@@ -16,6 +16,8 @@ st.title("AFL Pitcher Dashboard")
 
 CACHE_FILE = "afl_cache.parquet"
 
+SPORT_ID = 17
+
 def seconds_until_next_8am_pt(now_utc: dt.datetime | None = None) -> int:
     if now_utc is None:
         now_utc = dt.datetime.now(dt.timezone.utc)
