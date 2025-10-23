@@ -64,21 +64,32 @@ def fetch_afl_data_all_days(start: dt.date, end: dt.date) -> pl.DataFrame:
     return pl.concat(aligned, how="vertical", rechunk=True)
 
 def load_or_fetch_data() -> pl.DataFrame:
+    """Load cached AFL data or refresh automatically after 8am PT each day."""
     PT = ZoneInfo("America/Los_Angeles")
     now_pt = dt.datetime.now(PT)
+
+    # Define the daily 8am cutoff
     cutoff = now_pt.replace(hour=8, minute=0, second=0, microsecond=0)
     if now_pt < cutoff:
+        # Before 8am PT — still consider yesterday’s cache “fresh”
         cutoff = cutoff - dt.timedelta(days=1)
+
+    # If cache exists, check modified time
     if os.path.exists(CACHE_FILE):
         mtime = dt.datetime.fromtimestamp(os.path.getmtime(CACHE_FILE), PT)
         if mtime >= cutoff:
             return pl.read_parquet(CACHE_FILE)
+
+    # Otherwise fetch new data
     season_start = dt.date(2025, 10, 1)
     today = dt.date.today()
+
+    st.info(f"Refreshing data (last cache before {cutoff.strftime('%b %d %H:%M PT')})...")
     df = fetch_afl_data_all_days(season_start, today)
     if not df.is_empty():
         df.write_parquet(CACHE_FILE)
     return df
+
 
 AFL_TEAMS = [
     "Glendale Desert Dogs",
@@ -156,17 +167,6 @@ def load_afl_data():
         dfs_aligned.append(df)
 
     df = pl.concat(dfs_aligned)
-    return df
-
-
-def load_or_fetch_data():
-    """Loads cached data or fetches new AFL data if cache missing."""
-    if os.path.exists(CACHE_FILE):
-        df = pl.read_parquet(CACHE_FILE)
-    else:
-        df = load_afl_data()
-        if not df.is_empty():
-            df.write_parquet(CACHE_FILE)
     return df
 
 df = load_or_fetch_data()
