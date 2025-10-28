@@ -512,22 +512,25 @@ if "breakHorizontal" in df.columns and "breakVerticalInduced" in df.columns:
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
     ax.set_aspect("equal", adjustable="box")
 
-# only add legend if we actually have pitch types
-    if len(pitch_types_present) > 0:
-        legend = ax.legend(
-            frameon=True,
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.25),
-            ncol=min(len(pitch_types_present), 4),
-            fontsize=6,
-            title=None,
-            columnspacing=1.0,
-            handlelength=1.5,
-            handletextpad=0.4,
+if len(pitch_types_present) > 0:
+    legend = ax.legend(
+        frameon=True,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.25),
+        ncol=min(len(pitch_types_present), 4),
+        fontsize=6,
+        title=None,
+        columnspacing=1.0,
+        handlelength=1.5,
+        handletextpad=0.4,
     )
-    legend.get_frame().set_facecolor("white")
-    legend.get_frame().set_edgecolor("lightgray")
-    legend.get_frame().set_linewidth(0.5)
+
+    if legend:  
+        frame = legend.get_frame()
+        frame.set_facecolor("white")
+        frame.set_edgecolor("lightgray")
+        frame.set_linewidth(0.5)
+
 
     legend.get_frame().set_facecolor("white")
     legend.get_frame().set_edgecolor("lightgray")
