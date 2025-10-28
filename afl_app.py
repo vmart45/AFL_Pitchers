@@ -615,6 +615,48 @@ def pitch_table(df, ax, fontsize: int = 8):
     
 # --- Summary table (single, robust block) ---
 # --- Pitch summary table ---
+
+# --- Pitch summary table ---
+if df.is_empty():
+    st.warning("No pitch data found for this date.")
+    st.stop()
+
+total_pitches = df.height
+
+# choose best available release-height column
+rel_ht_col = (
+    "z0" if "z0" in df.columns
+    else ("releasePosZ" if "releasePosZ" in df.columns else None)
+)
+
+agg_exprs = [
+    pl.count().alias("Count"),
+    (pl.count() / total_pitches * 100).alias("Mix%"),
+]
+if "startSpeed" in df.columns:
+    agg_exprs.append(pl.col("startSpeed").mean().alias("Velo"))
+if "spinRate" in df.columns:
+    agg_exprs.append(pl.col("spinRate").mean().alias("Spin"))
+if "breakVerticalInduced" in df.columns:
+    agg_exprs.append(pl.col("breakVerticalInduced").mean().alias("IVB"))
+if "breakHorizontal" in df.columns:
+    agg_exprs.append(pl.col("breakHorizontal").mean().alias("HB"))
+if rel_ht_col:
+    agg_exprs.append(pl.col(rel_ht_col).mean().alias("RelHt"))
+if "extension" in df.columns:
+    agg_exprs.append(pl.col("extension").mean().alias("Ext"))
+
+summary = (
+    df.group_by("type__description")
+      .agg(agg_exprs)
+      .sort("Count", descending=True)
+)
+
+# If there are no pitch rows for that day
+if summary.is_empty():
+    st.warning("No pitch data found for this date.")
+    st.stop()
+
 if not df.is_empty():
     total_pitches = df.height
 
